@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
+import '../../models/absence_request.dart';
+import '../../models/makeup_session.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import 'reports_screen.dart';
 import 'request_approval_screen.dart';
-// Import các model cần thiết
-import '../../models/absence_request.dart';
-import '../../models/makeup_session.dart';
 
 class ManagerDashboardScreen extends StatefulWidget {
   const ManagerDashboardScreen({super.key});
@@ -18,7 +19,6 @@ class ManagerDashboardScreen extends StatefulWidget {
 class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
   int _selectedIndex = 0;
 
-  // Cập nhật _widgetOptions để có thể rebuild khi cần
   final List<Widget> _widgetOptions = <Widget>[
     const DashboardContent(), // Nội dung chính của dashboard
     const ReportsScreen(),
@@ -142,7 +142,7 @@ class _DashboardContentState extends State<DashboardContent> {
               ],
             ),
 
-            // THAY ĐỔI TẠI ĐÂY: Chỉ hiển thị nếu có yêu cầu
+            // Chỉ hiển thị nếu có yêu cầu
             if (summary.recentRequests.isNotEmpty)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,18 +152,16 @@ class _DashboardContentState extends State<DashboardContent> {
                   const SizedBox(height: 16),
                   // Vòng lặp để hiển thị các yêu cầu gần đây từ API
                   ...summary.recentRequests.map((request) {
-                    // TODO: Điều chỉnh lại các thuộc tính cho khớp với model của bạn
-                    // Ví dụ: request.lecturer.fullName, request.session.subjectName
                     if (request is AbsenceRequest) {
                       return _buildRequestCard(
-                          '[Nghỉ dạy] GV: ${request.lecturerId}', // Thay bằng tên giảng viên
-                          'Môn: Mạng máy tính\n${request.createdAt}', // Thay bằng thông tin buổi học
+                          '[Nghỉ dạy] GV: ${request.lecturerName}',
+                          'Môn: ${request.subjectName}\n${DateFormat('dd/MM/yyyy').format(request.sessionDate)}',
                           context);
                     }
                     if (request is MakeupSession) {
                       return _buildRequestCard(
-                          '[Dạy bù] GV: ${request.absentSessionId}', // Thay bằng tên giảng viên
-                          'Môn: CTGL & GT\n${request.makeupDate}', // Thay bằng thông tin buổi học
+                          '[Dạy bù] GV: ${request.lecturerName}',
+                          'Môn: ${request.subjectName}\n${DateFormat('dd/MM/yyyy').format(request.makeupDate)}',
                           context);
                     }
                     return const SizedBox.shrink(); // Trả về widget rỗng nếu không khớp

@@ -92,4 +92,9 @@ class ApiService {
     final response = await get('api/classes', token: token) as List;
     return response.map((json) => FilterItem.fromJson(json, idKey: 'class_id', nameKey: 'class_name')).toList();
   }
+  Future<List<FilterItem>> getStudentClasses(String token) async {
+    // SỬA LẠI ĐƯỜNG DẪN Ở ĐÂY
+    final response = await get('api/student-classes', token: token) as List;
+    return response.map((json) => FilterItem.fromJson(json, idKey: 'id', nameKey: 'className')).toList();
+  }
 }

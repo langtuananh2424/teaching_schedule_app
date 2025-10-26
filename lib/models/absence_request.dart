@@ -1,40 +1,43 @@
 // lib/models/absence_request.dart
 
 class AbsenceRequest {
-  final int requestId;
-  final int sessionId;
+  final int id;
+  final String requestType;
   final String reason;
-  final String approvalStatus;
   final DateTime createdAt;
-  final int lecturerId;
-
-  // Các trường bổ sung để hiển thị trên UI (giả sử backend trả về)
+  final String status;
+  final String? approverName;
   final String lecturerName;
   final String subjectName;
+  final String className;
+  final DateTime sessionDate; // **PROPERTY ADDED HERE**
 
   AbsenceRequest({
-    required this.requestId,
-    required this.sessionId,
+    required this.id,
+    required this.requestType,
     required this.reason,
-    required this.approvalStatus,
     required this.createdAt,
-    required this.lecturerId,
+    required this.status,
+    this.approverName,
     required this.lecturerName,
     required this.subjectName,
+    required this.className,
+    required this.sessionDate, // **ADDED TO CONSTRUCTOR**
   });
 
-  // THÊM PHƯƠNG THỨC NÀY VÀO ĐỂ SỬA LỖI
+  // The factory constructor is updated to handle the new property
   factory AbsenceRequest.fromJson(Map<String, dynamic> json) {
     return AbsenceRequest(
-      requestId: json['request_id'],
-      sessionId: json['session_id'],
+      id: json['id'],
+      requestType: json['requestType'] ?? 'Yêu cầu',
       reason: json['reason'] ?? '',
-      approvalStatus: json['approval_status'],
-      createdAt: DateTime.parse(json['created_at']),
-      lecturerId: json['lecturer_id'],
-      // Giả sử API trả về các trường này sau khi join bảng
-      lecturerName: json['lecturer_name'] ?? 'Chưa có tên',
-      subjectName: json['subject_name'] ?? 'Chưa có môn học',
+      createdAt: DateTime.parse(json['createdAt']),
+      status: json['status'],
+      approverName: json['approverName'],
+      lecturerName: json['lecturerName'] ?? 'N/A',
+      subjectName: json['subjectName'] ?? 'N/A',
+      className: json['className'] ?? 'N/A',
+      sessionDate: DateTime.parse(json['sessionDate']), // **MAPPING ADDED HERE**
     );
   }
 }
