@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:frontend_app/Screen/schedule_screen.dart'; // Updated to match your folder
+import 'package:frontend_app/screens//schedule_screen.dart'; // Updated to match your folder
 
 void main() {
   runApp(MyApp());
