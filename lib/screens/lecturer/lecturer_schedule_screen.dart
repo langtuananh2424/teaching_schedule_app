@@ -1,227 +1,277 @@
 import 'package:flutter/material.dart';
-import 'package:frontend_app/models/schedule.dart';
-import 'package:frontend_app/services/api_service.dart'; // Import service
-import 'package:frontend_app/screens/lecturer/session_details_screen.dart'; // Import màn hình chi tiết
+import 'package:get/get.dart';
+import 'package:frontend_app/controllers/session_controller.dart';
+import 'package:frontend_app/controllers/auth_controller.dart';
 import 'package:frontend_app/models/session.dart';
+import 'package:frontend_app/models/schedule_status.dart';
+import 'package:intl/intl.dart';
+import 'package:date_picker_timeline/date_picker_timeline.dart'; // Import thư viện lịch
 
-import '../../utils/app_utils.dart';
-import '../schedule_screen.dart'; // Import màu
+class LecturerScheduleScreen extends StatelessWidget {
+  const LecturerScheduleScreen({super.key});
 
-// ĐỔI TÊN: ScheduleScreen -> LecturerScheduleScreen
-class LecturerScheduleScreen extends StatefulWidget {
-  @override
-  _LecturerScheduleScreenState createState() => _LecturerScheduleScreenState();
-}
+  // Tách AppBar ra thành một widget riêng
+  PreferredSizeWidget _buildAppBar(AuthController authController) {
+    // Màu xanh đậm cho AppBar
+    const Color darkBlue = Color(0xFF003366);
 
-class _LecturerScheduleScreenState extends State<LecturerScheduleScreen> {
-  // Sử dụng FutureBuilder để gọi API
-  late Future<List<Schedule>> futureSchedules;
-  final ApiService apiService = ApiService(); // Khởi tạo service
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(56.0), // Chiều cao AppBar chuẩn
+      child: Container(
+        color: darkBlue,
+        child: SafeArea( // Đảm bảo không bị đè lên thanh status
+          child: Row(
+            children: [
+              // Nút Quay lại
+              TextButton.icon(
+                onPressed: () {
+                  // Có thể dùng Get.back() nếu đây là màn hình con
+                  // Hoặc không làm gì nếu đây là màn hình chính
+                },
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                label: const Text(
+                  'Quay lại',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ),
+              const Spacer(), // Đẩy icon người dùng sang phải
 
-  @override
-  void initState() {
-    super.initState();
-    // Gọi API khi màn hình được khởi tạo
-    futureSchedules = apiService.fetchTeachingSchedules();
+              // Icon Người dùng
+              IconButton(
+                icon: const Icon(Icons.account_circle, color: Colors.white, size: 30),
+                onPressed: () {
+                  // Logic mở màn hình profile
+                },
+              ),
+
+              // Icon Đăng xuất
+              IconButton(
+                icon: const Icon(Icons.logout, color: Colors.white70),
+                onPressed: () {
+                  authController.logout();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {},
-        ),
-        title: Row(
-          children: [
-            const Text('Quay lại'),
-            const Spacer(),
-            CircleAvatar(
-              backgroundColor: Colors.grey.shade300,
-              radius: 18,
-              child: const Icon(Icons.person, color: Colors.blue),
-            ),
-          ],
-        ),
-        // AppBar color được quản lý bởi theme
-      ),
-      body: Column(
+  // Tách phần lịch ra widget riêng
+  // Tách phần lịch ra widget riêng
+  Widget _buildCalendarSection(SessionController sessionController) {
+    const Color darkBlue = Color(0xFF003366); // Màu xanh đậm
+
+    return Container(
+      color: darkBlue, // Nền xanh đậm
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
         children: [
-          buildWeekCalendar(),
+          // Text "Tháng 10, 2025"
+          Obx(() {
+            String monthYear = DateFormat('MMMM, yyyy', 'vi_VN')
+                .format(sessionController.selectedDate.value);
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Text(
+                'Tháng ${monthYear[0].toUpperCase()}${monthYear.substring(1)}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            );
+          }),
 
-          // Sử dụng FutureBuilder để hiển thị dữ liệu
-          Expanded(
-            child: FutureBuilder<List<Schedule>>(
-              future: futureSchedules,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text('Lỗi tải dữ liệu: ${snapshot.error}'));
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('Không có lịch dạy nào.'));
-                }
+          // Lịch (Đã sửa cỡ chữ)
+          DatePicker(
+            DateTime.now().subtract(const Duration(days: 3)),
+            height: 90,
+            width: 70, // Giữ nguyên chiều rộng
+            initialSelectedDate: sessionController.selectedDate.value,
+            locale: 'vi_VN',
+            onDateChange: (date) {
+              sessionController.changeSelectedDate(date);
+            },
 
-                // Dữ liệu đã sẵn sàng
-                final schedules = snapshot.data!;
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
-                  itemCount: schedules.length,
-                  itemBuilder: (context, index) {
-                    final item = schedules[index];
-                    return ScheduleItem(schedule: item); // Truyền đối tượng Schedule
-                  },
-                );
-              },
+            selectionColor: Colors.transparent,
+            selectedTextColor: Colors.red,
+
+            // === GIẢM CỠ CHỮ ĐỂ KHẮC PHỤC LỖI DẢI ĐỎ ===
+            monthTextStyle: const TextStyle(color: Colors.white70, fontSize: 10), // Giảm từ 12 -> 10
+            dayTextStyle: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold), // Giảm từ 14 -> 12
+            dateTextStyle: const TextStyle(
+                color: Colors.white,
+                fontSize: 20, // Giảm từ 22 -> 20
+                fontWeight: FontWeight.bold
             ),
+            // ===========================================
           ),
         ],
       ),
     );
   }
 
-  // Widget xây dựng phần lịch tuần (Giữ nguyên)
-  Widget buildWeekCalendar() {
-    final List<String> daysOfWeek = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-    final List<String> dates = ['19', '20', '21', '22', '23', '24', '25'];
+  // Widget build 1 thẻ buổi học (Đã cập nhật UI)
+  Widget _buildSessionItem(BuildContext context, Session session) {
+    // Logic màu sắc
+    Color statusColor;
 
-    return Container(
-      color: Theme.of(context).primaryColor,
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
-      child: Column(
-        children: [
-          const Text(
-            'Tháng 9, năm 2025',
-            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: List.generate(daysOfWeek.length, (index) {
-              bool isSelected = index == 1; // Ví dụ: chọn T3/20
-              Color dayColor = isSelected ? Colors.red : Colors.white;
+    // BIẾN timeColor KHÔNG CÒN CẦN THIẾT NỮA
+    // Color timeColor;
 
-              return Expanded(
-                child: Column(
-                  children: [
-                    Text(
-                      daysOfWeek[index],
-                      style: TextStyle(color: dayColor, fontWeight: FontWeight.bold, fontSize: 15),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      dates[index],
-                      style: TextStyle(
-                        color: dayColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+    switch (session.status) {
+      case ScheduleStatus.TAUGHT:
+        statusColor = Colors.green;
+        // timeColor = Colors.black;
+        break;
+      case ScheduleStatus.NOT_TAUGHT:
+        statusColor = Colors.blue;
+        // timeColor = Colors.black;
+        break;
+      case ScheduleStatus.ABSENT_APPROVED:
+      case ScheduleStatus.ABSENT_UNAPPROVED:
+        statusColor = Colors.red;
+        // timeColor = Colors.red;
+        break;
+      case ScheduleStatus.MAKEUP_TAUGHT:
+        statusColor = Colors.orange;
+        // timeColor = Colors.red;
+        break;
+      default:
+        statusColor = Colors.grey;
+    // timeColor = Colors.black;
+    }
+
+    // Lấy "Giờ"
+    final String time = DateFormat('HH:mm').format(session.sessionDate);
+
+    return InkWell(
+      onTap: () {
+        Get.toNamed('/session_details', arguments: session);
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE3F2FD), // Màu nền xanh nhạt
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Cột 1: Giờ (Đã sửa màu)
+            SizedBox(
+              width: 60,
+              child: Text(
+                time,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red, // <-- ĐỔI THÀNH MÀU ĐỎ
                 ),
+              ),
+            ),
+            const SizedBox(width: 16),
+
+            // Cột 2: Thông tin
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Dữ liệu "Môn học" (Đã sửa)
+                  Text(
+                    session.assignment.subject.subjectName, // <-- CHỈ LẤY TÊN MÔN HỌC
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+
+                  // Dữ liệu "Phòng học"
+                  Text(
+                    session.classroom,
+                    style: const TextStyle(fontSize: 15, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Dữ liệu "Status"
+                  RichText(
+                    text: TextSpan(
+                      style: const TextStyle(fontSize: 15, color: Colors.black87),
+                      children: [
+                        const TextSpan(text: 'Trạng thái: '),
+                        TextSpan(
+                          text: session.statusText,
+                          style: TextStyle(
+                            color: statusColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+  // HÀM BUILD CHÍNH
+  @override
+  Widget build(BuildContext context) {
+    final SessionController sessionController = Get.put(SessionController());
+    final AuthController authController = Get.find();
+    Intl.defaultLocale = 'vi_VN';
+
+    return Scaffold(
+      backgroundColor: Colors.white, // Nền trắng cho danh sách
+
+      // 1. AppBar tùy chỉnh
+      appBar: _buildAppBar(authController),
+
+      body: Column(
+        children: [
+          // 2. Phần lịch
+          _buildCalendarSection(sessionController),
+
+          // 3. Phần danh sách
+          Expanded(
+            child: Obx(() {
+              if (sessionController.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              // Sử dụng getter đã lọc
+              final sessions = sessionController.filteredSessions;
+
+              if (sessions.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'Không có buổi học nào vào ngày này.',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.only(top: 8),
+                itemCount: sessions.length,
+                itemBuilder: (context, index) {
+                  return _buildSessionItem(context, sessions[index]);
+                },
               );
             }),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class ApiService {
-}
-
-// WIDGET MỤC LỊCH DẠY (Giữ nguyên)
-class ScheduleItem extends StatelessWidget {
-  final Schedule schedule;
-
-  ScheduleItem({required this.schedule});
-
-  @override
-  Widget build(BuildContext context) {
-    Color statusColor;
-    switch (schedule.status) {
-      case 'Hoàn thành':
-        statusColor = AppColors.statusCompleted;
-        break;
-      case 'Sắp diễn ra':
-        statusColor = AppColors.statusUpcoming;
-        break;
-      case 'Dạy bù':
-        statusColor = AppColors.statusMakeup;
-        break;
-      case 'Nghỉ':
-        statusColor = AppColors.statusCancelled;
-        break;
-      default:
-        statusColor = Colors.black;
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                // Đổi sang SessionDetailScreen
-                builder: (context) => SessionDetailScreen(schedule: schedule),
-              ),
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.lightBlueBackground,
-            foregroundColor: Colors.black,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            elevation: 2,
-          ),
-          child: IntrinsicHeight(
-            child: Row(
-              children: [
-                Center(
-                  child: Text(
-                    schedule.time,
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red.shade700),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        schedule.subject,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        softWrap: true,
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        schedule.room,
-                        style: TextStyle(color: Colors.grey.shade800, fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ),
-                Center(
-                  child: Text(
-                    'Trạng thái: ',
-                    style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
-                  ),
-                ),
-                Text(
-                  schedule.status,
-                  style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 13),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

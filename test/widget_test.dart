@@ -1,30 +1,39 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:teaching_schedule/main.dart';
+import 'package:frontend_app/screens//schedule_screen.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('ScheduleScreen hiển thị đúng các thành phần', (WidgetTester tester) async {
+    // Xây dựng chỉ ScheduleScreen.
+    // Bạn cần bọc nó trong MaterialApp để cung cấp context cần thiết (như directionality).
+    await tester.pumpWidget(MaterialApp(
+      home: ScheduleScreen(),
+    ));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Đợi tất cả các frame được render xong.
+    await tester.pumpAndSettle();
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    // --- Bắt đầu các kiểm tra ---
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Cách tốt hơn để tìm AppBar là sử dụng kiểu (Type).
+    expect(find.byType(AppBar), findsOneWidget);
+
+    // Nếu bạn vẫn muốn kiểm tra tiêu đề, hãy tìm nó bên trong AppBar.
+    // Điều này đảm bảo bạn đang kiểm tra đúng văn bản.
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('Quay lại'), // Giả sử 'Quay lại' là tiêu đề
+      ),
+      findsOneWidget,
+    );
+
+    // Đối với thời gian "7:00", hãy tìm kiếm nó một cách cụ thể hơn nếu có thể.
+    // Ví dụ, nếu nó nằm trong một ListTile, bạn có thể tìm ListTile đó trước.
+    // Nếu "7:00" là đủ đặc trưng cho màn hình này, thì kiểm tra của bạn có thể vẫn ổn.
+    expect(find.text('7:00'), findsOneWidget);
+
+    // Ví dụ về một kiểm tra mạnh mẽ hơn:
+    // expect(find.byKey(const Key('schedule_time_7_00')), findsOneWidget);
   });
 }

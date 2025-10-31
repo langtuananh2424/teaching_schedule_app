@@ -1,8 +1,13 @@
-// File placeholder cho model Môn học
 class Subject {
-  final String id;
+  final int subjectId;
   final String subjectName;
-  final String subjectCode;
 
-  Subject({required this.id, required this.subjectName, required this.subjectCode});
+  Subject({required this.subjectId, required this.subjectName});
+
+  factory Subject.fromJson(Map<String, dynamic> json) {
+    return Subject(
+      subjectId: json['subjectId'] ?? 0,
+      subjectName: json['subjectName'] ?? 'N/A',
+    );
+  }
 }

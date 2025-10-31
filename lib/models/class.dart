@@ -1,12 +1,13 @@
-class ClassInfo { // Đổi tên từ Class để tránh trùng với từ khóa 'class'
-  // Dựa trên bảng Classes [cite: 212]
-  final int classId;
-  final String classCode;
+class StudentClass {
+  final int id;
   final String className;
 
-  ClassInfo({
-    required this.classId,
-    required this.classCode,
-    required this.className,
-  });
+  StudentClass({required this.id, required this.className});
+
+  factory StudentClass.fromJson(Map<String, dynamic> json) {
+    return StudentClass(
+      id: json['id'] ?? 0,
+      className: json['className'] ?? 'N/A',
+    );
+  }
 }
