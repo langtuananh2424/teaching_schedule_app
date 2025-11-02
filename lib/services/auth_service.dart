@@ -11,11 +11,15 @@ class AuthService with ChangeNotifier {
   String? _token;
   String? _userRole;
   String? _userName;
+  String? _userEmail;
+  int? _userId; // Thêm userId để lưu ID người dùng
   bool _isLoading = true;
 
   String? get token => _token;
   String? get userRole => _userRole;
   String? get userName => _userName;
+  String? get userEmail => _userEmail;
+  int? get userId => _userId; // Getter cho userId
   bool get isAuthenticated => _token != null;
   bool get isLoading => _isLoading;
 
@@ -30,10 +34,28 @@ class AuthService with ChangeNotifier {
     if (_token != null && !JwtDecoder.isExpired(_token!)) {
       Map<String, dynamic> decodedToken = JwtDecoder.decode(_token!);
 
+      print('🔍 Token contents: $decodedToken');
+
       // SỬA LỖI TẠI ĐÂY: Xử lý 'roles' như một danh sách
       final rolesList = decodedToken['roles'] as List<dynamic>?;
-      _userRole = rolesList?.first?.toString().toUpperCase(); // Lấy phần tử đầu tiên
+      _userRole = rolesList?.first
+          ?.toString()
+          .toUpperCase(); // Lấy phần tử đầu tiên
       _userName = decodedToken['fullName'];
+
+      // Email có thể ở nhiều field khác nhau
+      _userEmail =
+          decodedToken['email'] ??
+          decodedToken['username'] ??
+          decodedToken['sub'];
+
+      // Parse userId từ token (có thể là String hoặc int)
+      final subValue = decodedToken['sub'];
+      _userId = subValue is int ? subValue : int.tryParse(subValue.toString());
+
+      print(
+        '🔑 Token decoded: userId=$_userId, email=$_userEmail, role=$_userRole, name=$_userName',
+      );
     } else {
       _token = null;
     }
@@ -47,13 +69,8 @@ class AuthService with ChangeNotifier {
     try {
       final response = await http.post(
         loginUrl,
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
+        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        body: jsonEncode({'email': email, 'password': password}),
       );
 
       if (response.statusCode == 200) {
@@ -66,10 +83,30 @@ class AuthService with ChangeNotifier {
 
           Map<String, dynamic> decodedToken = JwtDecoder.decode(_token!);
 
+          print('🔍 Login token contents: $decodedToken');
+
           // SỬA LỖI TẠI ĐÂY: Xử lý 'roles' như một danh sách
           final rolesList = decodedToken['roles'] as List<dynamic>?;
-          _userRole = rolesList?.first?.toString().toUpperCase(); // Lấy phần tử đầu tiên
+          _userRole = rolesList?.first
+              ?.toString()
+              .toUpperCase(); // Lấy phần tử đầu tiên
           _userName = decodedToken['fullName'];
+
+          // Email có thể ở nhiều field khác nhau
+          _userEmail =
+              decodedToken['email'] ??
+              decodedToken['username'] ??
+              decodedToken['sub'];
+
+          // Parse userId từ token (có thể là String hoặc int)
+          final subValue = decodedToken['sub'];
+          _userId = subValue is int
+              ? subValue
+              : int.tryParse(subValue.toString());
+
+          print(
+            '🔑 Login success: userId=$_userId, email=$_userEmail, role=$_userRole, name=$_userName',
+          );
           notifyListeners();
           return true;
         }
