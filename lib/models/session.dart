@@ -1,89 +1,164 @@
-// lib/models/session.dart
 
-// Import lại các model lồng nhau
-import 'package:frontend_app/models/assignment.dart';
-import 'package:frontend_app/models/schedule_status.dart';
-import 'package:frontend_app/models/subject.dart';
-import 'package:frontend_app/models/class.dart';
-import 'package:frontend_app/models/lecturer.dart';
+import 'package:flutter/material.dart';
 
 class Session {
   final int sessionId;
+  final int assignmentId;
   final DateTime sessionDate;
   final int startPeriod;
   final int endPeriod;
   final String classroom;
-  final ScheduleStatus status;
-
-  // === TRẢ LẠI TRƯỜNG 'assignment' ===
-  final Assignment assignment;
-  // ===================================
-
-  String get statusText {
-    switch (status) {
-      case ScheduleStatus.NOT_TAUGHT:
-        return 'Sắp diễn ra';
-      case ScheduleStatus.ABSENT_APPROVED:
-      case ScheduleStatus.ABSENT_UNAPPROVED:
-        return 'Nghỉ';
-      case ScheduleStatus.TAUGHT:
-        return 'Hoàn thành';
-      case ScheduleStatus.MAKEUP_TAUGHT:
-        return 'Đã dạy bù';
-      default:
-        return 'Không rõ';
-    }
-  }
+  final String? content;
+  final String status;
+  final String? notes;
+  final String subjectName;
+  final String className;
 
   Session({
     required this.sessionId,
+    required this.assignmentId,
     required this.sessionDate,
     required this.startPeriod,
     required this.endPeriod,
     required this.classroom,
+    this.content,
     required this.status,
-    required this.assignment, // <-- Thêm lại vào constructor
+    this.notes,
+    required this.subjectName,
+    required this.className,
   });
 
-  // === FACTORY ĐÃ ĐƯỢC CẬP NHẬT ===
-  // Nó sẽ đọc JSON "phẳng" và "tái cấu trúc" (re-nest) lại
-  // ===================================
   factory Session.fromJson(Map<String, dynamic> json) {
-
-    // 1. Tạo các đối tượng con "giả" từ dữ liệu phẳng
-    final subject = Subject(
-        subjectId: 0, // API không cung cấp, dùng 0
-        subjectName: json['subjectName'] ?? 'N/A'
-    );
-
-    final studentClass = StudentClass(
-        id: 0, // API không cung cấp, dùng 0
-        className: json['className'] ?? 'N/A'
-    );
-
-    final lecturer = Lecturer(
-        lecturerId: 0, // API không cung cấp, dùng 0
-        fullName: json['lecturerName'] ?? 'N/A',
-        email: '' // API không cung cấp
-    );
-
-    // 2. Tạo đối tượng Assignment "giả"
-    final assignment = Assignment(
-        assignmentId: json['assignmentId'] ?? 0,
-        lecturer: lecturer,
-        subject: subject,
-        studentClass: studentClass
-    );
-
-    // 3. Trả về Session với đối tượng assignment đã được "tái cấu trúc"
     return Session(
-      sessionId: json['sessionId'] ?? 0,
-      sessionDate: DateTime.tryParse(json['sessionDate'] ?? '') ?? DateTime.now(),
-      startPeriod: json['startPeriod'] ?? 0,
-      endPeriod: json['endPeriod'] ?? 0,
-      classroom: json['classroom'] ?? 'N/A',
-      status: scheduleStatusFromString(json['status'] ?? ''),
-      assignment: assignment, // <-- Gán đối tượng vừa tạo
+      sessionId: json['sessionId'] ?? json['session_id'],
+      assignmentId: json['assignmentId'] ?? json['assignment_id'],
+      sessionDate: DateTime.parse(json['sessionDate'] ?? json['session_date']),
+      startPeriod: json['startPeriod'] ?? json['start_period'],
+      endPeriod: json['endPeriod'] ?? json['end_period'],
+      classroom: json['classroom'],
+      content: json['content'],
+      status: json['status'],
+      notes: json['notes'],
+      subjectName:
+      json['subjectName'] ?? json['subject_name'] ?? 'Không có tên môn học',
+      className: json['className'] ?? json['class_name'] ?? 'Không có tên lớp',
     );
+  }
+
+  /// Getter để lấy chuỗi thời gian hiển thị, ví dụ: "7:00 - 9:40"
+  String get formattedTime {
+    const periodMap = {
+      1: "7:00",
+      2: "7:50",
+      3: "8:40",
+      4: "9:45",
+      5: "10:35",
+      6: "11:25",
+      7: "12:55",
+      8: "13:45",
+      9: "14:35",
+      10: "15:40",
+      11: "16:30",
+      12: "17:20",
+    };
+    final startTime = periodMap[startPeriod] ?? '--:--';
+    final endPeriodTime = periodMap[endPeriod + 1] ?? periodMap[endPeriod];
+    return '$startTime - $endPeriodTime';
+  }
+
+  /// Lấy thời gian bắt đầu của tiết học
+  DateTime get startTime {
+    const periodStartTimes = {
+      1: 7 * 60 + 0, // 7:00
+      2: 7 * 60 + 50, // 7:50
+      3: 8 * 60 + 40, // 8:40
+      4: 9 * 60 + 45, // 9:45
+      5: 10 * 60 + 35, // 10:35
+      6: 11 * 60 + 25, // 11:25
+      7: 12 * 60 + 55, // 12:55
+      8: 13 * 60 + 45, // 13:45
+      9: 14 * 60 + 35, // 14:35
+      10: 15 * 60 + 40, // 15:40
+      11: 16 * 60 + 30, // 16:30
+      12: 17 * 60 + 20, // 17:20
+    };
+    final minutes = periodStartTimes[startPeriod] ?? 0;
+    return DateTime(
+      sessionDate.year,
+      sessionDate.month,
+      sessionDate.day,
+      minutes ~/ 60,
+      minutes % 60,
+    );
+  }
+
+  /// Lấy thời gian kết thúc của tiết học
+  DateTime get endTime {
+    const periodEndTimes = {
+      1: 7 * 60 + 50, // 7:50
+      2: 8 * 60 + 40, // 8:40
+      3: 9 * 60 + 30, // 9:30
+      4: 10 * 60 + 35, // 10:35
+      5: 11 * 60 + 25, // 11:25
+      6: 12 * 60 + 15, // 12:15
+      7: 13 * 60 + 45, // 13:45
+      8: 14 * 60 + 35, // 14:35
+      9: 15 * 60 + 25, // 15:25
+      10: 16 * 60 + 30, // 16:30
+      11: 17 * 60 + 20, // 17:20
+      12: 18 * 60 + 10, // 18:10
+    };
+    final minutes = periodEndTimes[endPeriod] ?? 0;
+    return DateTime(
+      sessionDate.year,
+      sessionDate.month,
+      sessionDate.day,
+      minutes ~/ 60,
+      minutes % 60,
+    );
+  }
+
+  /// Kiểm tra trạng thái thời gian thực dựa trên thời gian hiện tại
+  String get realtimeStatus {
+    final now = DateTime.now();
+
+    // Nếu đã có trạng thái hoàn thành hoặc nghỉ từ database
+    if (status.toUpperCase() == 'TAUGHT' ||
+        status.toUpperCase() == 'ABSENT_APPROVED' ||
+        status.toUpperCase() == 'MAKEUP_TAUGHT') {
+      return status;
+    }
+
+    // Kiểm tra thời gian thực
+    if (now.isBefore(startTime)) {
+      return 'NOT_TAUGHT'; // Sắp diễn ra
+    } else if (now.isAfter(endTime)) {
+      return 'TAUGHT'; // Đã kết thúc -> Hoàn thành
+    } else {
+      return 'ONGOING'; // Đang diễn ra
+    }
+  }
+
+  /// Getter để lấy thông tin trạng thái và màu sắc tương ứng (THỜI GIAN THỰC)
+  ({String text, Color color}) get statusDisplay {
+    final currentStatus = realtimeStatus.toUpperCase();
+
+    switch (currentStatus) {
+      case 'TAUGHT':
+        return (text: 'Hoàn thành', color: const Color(0xFF4CAF50)); // Green
+      case 'ABSENT_APPROVED':
+        return (text: 'Nghỉ', color: const Color(0xFFF44336)); // Red
+      case 'MAKEUP_TAUGHT':
+        return (text: 'Dạy bù', color: const Color(0xFFFFA726)); // Orange
+      case 'ONGOING':
+        return (text: 'Đang diễn ra', color: const Color(0xFF2196F3)); // Blue
+      case 'NOT_TAUGHT':
+        return (
+        text: 'Sắp diễn ra',
+        color: const Color(0xFF03A9F4),
+        ); // Light Blue
+      default:
+        return (text: 'Không xác định', color: Colors.grey);
+    }
   }
 }

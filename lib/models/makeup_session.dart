@@ -1,33 +1,47 @@
 // lib/models/makeup_session.dart
 
 class MakeupSession {
-  final int makeupSessionId;
-  final int absentSessionId;
+  final int id;
+  final int absenceRequestId;
   final DateTime makeupDate;
-  // Thêm các trường khác...
+  final int startPeriod;
+  final int endPeriod;
+  final String classroom;
+  final String status;
+  final DateTime createdAt;
 
-  // Các trường bổ sung để hiển thị trên UI (giả sử backend trả về)
+  // Thông tin hiển thị
   final String lecturerName;
   final String subjectName;
-
+  final String className;
 
   MakeupSession({
-    required this.makeupSessionId,
-    required this.absentSessionId,
+    required this.id,
+    required this.absenceRequestId,
     required this.makeupDate,
+    required this.startPeriod,
+    required this.endPeriod,
+    required this.classroom,
+    required this.status,
+    required this.createdAt,
     required this.lecturerName,
     required this.subjectName,
+    required this.className,
   });
 
-  // THÊM PHƯƠ-NG THỨC NÀY VÀO ĐỂ SỬA LỖI
   factory MakeupSession.fromJson(Map<String, dynamic> json) {
     return MakeupSession(
-      makeupSessionId: json['makeup_session_id'],
-      absentSessionId: json['absent_session_id'],
-      makeupDate: DateTime.parse(json['makeup_date']),
-      // Giả sử API trả về các trường này sau khi join bảng
-      lecturerName: json['lecturer_name'] ?? 'Chưa có tên',
-      subjectName: json['subject_name'] ?? 'Chưa có môn học',
+      id: json['id'],
+      absenceRequestId: json['absenceRequestId'],
+      makeupDate: DateTime.parse(json['makeupDate']),
+      startPeriod: json['startPeriod'],
+      endPeriod: json['endPeriod'],
+      classroom: json['classroom'],
+      status: json['status'],
+      createdAt: DateTime.parse(json['createdAt']),
+      lecturerName: json['lecturerName'] ?? 'Chưa có tên',
+      subjectName: json['subjectName'] ?? 'Chưa có môn học',
+      className: json['className'] ?? 'Chưa có lớp',
     );
   }
 }

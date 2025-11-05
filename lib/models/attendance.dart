@@ -1,37 +1,40 @@
-import 'package:flutter/material.dart';
+class Attendance {
+  final int attendanceId;
+  final int sessionId;
+  final int studentId;
+  final String studentCode;
+  final String studentName;
+  final String status; // PRESENT, ABSENT, LATE
+  final String? notes;
+  final DateTime? recordedAt;
 
-// Enum và helpers cho Điểm danh (Đã tách từ file cũ)
-enum AttendanceStatus {
-  present, // Có mặt (Màu xanh lá)
-  absent, // Vắng (Màu đỏ)
-  late, // Muộn (Màu vàng)
-  excused // Có phép (Màu xanh dương)
-}
+  Attendance({
+    required this.attendanceId,
+    required this.sessionId,
+    required this.studentId,
+    required this.studentCode,
+    required this.studentName,
+    required this.status,
+    this.notes,
+    this.recordedAt,
+  });
 
-// Hàm tiện ích để chuyển Enum sang String tiếng Việt
-String getStatusString(AttendanceStatus status) {
-  switch (status) {
-    case AttendanceStatus.present:
-      return 'Có mặt';
-    case AttendanceStatus.absent:
-      return 'Vắng';
-    case AttendanceStatus.late:
-      return 'Muộn';
-    case AttendanceStatus.excused:
-      return 'Có phép';
+  factory Attendance.fromJson(Map<String, dynamic> json) {
+    return Attendance(
+      attendanceId: json['attendance_id'] ?? 0,
+      sessionId: json['session_id'] ?? 0,
+      studentId: json['student_id'] ?? 0,
+      studentCode: json['student_code'] ?? '',
+      studentName: json['student_name'] ?? 'N/A',
+      status: json['status'] ?? 'ABSENT',
+      notes: json['notes'],
+      recordedAt: json['recorded_at'] != null
+          ? DateTime.parse(json['recorded_at'])
+          : null,
+    );
   }
-}
 
-// Hàm tiện ích để lấy màu cho trạng thái
-Color getStatusColor(AttendanceStatus status) {
-  switch (status) {
-    case AttendanceStatus.present:
-      return Colors.green.shade600;
-    case AttendanceStatus.absent:
-      return Colors.red.shade600;
-    case AttendanceStatus.late:
-      return Colors.amber.shade600;
-    case AttendanceStatus.excused:
-      return Colors.blue.shade600;
+  Map<String, dynamic> toJson() {
+    return {'studentId': studentId, 'status': status, 'notes': notes};
   }
 }

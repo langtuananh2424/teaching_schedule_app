@@ -117,6 +117,8 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -130,6 +132,8 @@ class MyApp extends StatelessWidget {
 
 // --- 4. MÀN HÌNH DANH SÁCH LỊCH DẠY (SCHEDULE SCREEN) ---
 class ScheduleScreen extends StatelessWidget {
+  const ScheduleScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -224,7 +228,7 @@ class ScheduleScreen extends StatelessWidget {
 class ScheduleItem extends StatelessWidget {
   final Schedule schedule;
 
-  ScheduleItem({required this.schedule});
+  const ScheduleItem({super.key, required this.schedule});
 
   @override
   Widget build(BuildContext context) {
@@ -326,7 +330,7 @@ class ScheduleItem extends StatelessWidget {
 class ScheduleDetailScreen extends StatelessWidget {
   final Schedule schedule;
 
-  ScheduleDetailScreen({required this.schedule});
+  const ScheduleDetailScreen({super.key, required this.schedule});
 
   @override
   Widget build(BuildContext context) {
@@ -649,7 +653,7 @@ class ScheduleDetailScreen extends StatelessWidget {
 class AbsenceRegistrationScreen extends StatelessWidget {
   final Schedule schedule;
 
-  AbsenceRegistrationScreen({required this.schedule});
+  const AbsenceRegistrationScreen({super.key, required this.schedule});
 
   // Widget Lịch Tuần cho màn hình chi tiết (sao chép từ ScheduleDetailScreen)
   Widget _buildDetailWeekCalendar(BuildContext context) {
@@ -898,7 +902,7 @@ class AbsenceRegistrationScreen extends StatelessWidget {
 // --- 8. MÀN HÌNH ĐĂNG KÝ DẠY BÙ (SUBSTITUTE REGISTRATION SCREEN) ---
 class SubstituteRegistrationScreen extends StatefulWidget {
   final Schedule schedule;
-  SubstituteRegistrationScreen({required this.schedule});
+  const SubstituteRegistrationScreen({super.key, required this.schedule});
 
   @override
   _SubstituteRegistrationScreenState createState() => _SubstituteRegistrationScreenState();
@@ -1200,7 +1204,7 @@ class _SubstituteRegistrationScreenState extends State<SubstituteRegistrationScr
 
 class AttendanceScreen extends StatefulWidget {
   final Schedule schedule;
-  const AttendanceScreen({Key? key, required this.schedule}) : super(key: key);
+  const AttendanceScreen({super.key, required this.schedule});
 
   @override
   _AttendanceScreenState createState() => _AttendanceScreenState();
@@ -1359,10 +1363,9 @@ class _AttendanceItem extends StatelessWidget {
   final VoidCallback onStatusTap;
 
   const _AttendanceItem({
-    Key? key,
     required this.student,
     required this.onStatusTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

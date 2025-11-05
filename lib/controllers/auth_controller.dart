@@ -1,34 +1,57 @@
+// lib/controllers/auth_controller.dart
 
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:frontend_app/services/auth_service.dart';
+import 'package:http/http.dart' as http;
+import '../constants/constants.dart'; // Đảm bảo import này đúng
+import '../models/lecturer.dart';
 
-class AuthController extends GetxController {
-  final AuthService _authService = AuthService();
-  var isLoading = false.obs;
+class AuthController with ChangeNotifier {
+  bool _isLoggedIn = false;
+  String _userRole = '';
+  Lecturer? _lecturer;
 
-  Future<void> login(String email, String password) async {
+  bool get isLoggedIn => _isLoggedIn;
+  String get userRole => _userRole;
+  Lecturer? get lecturer => _lecturer;
+
+  Future<bool> login(String email, String password) async {
     try {
-      isLoading(true);
-      final success = await _authService.login(email, password);
-      if (success) {
-        // THAY ĐỔI TẠI ĐÂY:
-        Get.offNamed('/lecturer_schedule'); // Chuyển đến màn hình lịch dạy
-      } else {
-        Get.snackbar(
-          'Đăng nhập thất bại',
-          'Email hoặc mật khẩu không chính xác.',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
+      // SỬA LẠI ĐOẠN NÀY
+      final response = await http.post(
+        Uri.parse('${AppConstants.baseUrl}/api/auth/login'), // Sửa 1: Dùng AppConstants.baseUrl
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8', // Thêm header
+        },
+        body: jsonEncode({ // Sửa 2: Mã hóa body thành JSON
+          'email': email,
+          'password': password
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        _isLoggedIn = true;
+        _userRole = data['role'] as String;
+        if (_userRole == 'lecturer') {
+          _lecturer = Lecturer.fromJson(data['lecturer']);
+        } else {
+          _lecturer = null;
+        }
+        notifyListeners();
+        return true;
       }
-    } finally {
-      isLoading(false);
+      return false;
+    } catch (e) {
+      print(e); // In lỗi ra để dễ gỡ rối
+      return false;
     }
   }
 
-  void logout() async {
-    await _authService.logout();
-    Get.offAllNamed('/login');
+  void logout() {
+    _isLoggedIn = false;
+    _userRole = '';
+    _lecturer = null;
+    notifyListeners();
   }
 }

@@ -1,48 +1,81 @@
-// lib/controllers/session_controller.dart
-import 'package:get/get.dart';
-import 'package:frontend_app/models/session.dart';
-import 'package:frontend_app/services/api_service.dart';
+import 'package:flutter/material.dart'; // Import để sử dụng màu sắc
 
-class SessionController extends GetxController {
-  final ApiService _apiService = ApiService();
+class Session {
+  // --- Dữ liệu từ bảng `Schedules` ---
+  final int sessionId;
+  final int assignmentId;
+  final DateTime sessionDate;
+  final int startPeriod;
+  final int endPeriod;
+  final String classroom;
+  final String? content; // Nội dung có thể là null
+  final String status;
+  final String? notes; // Ghi chú có thể là null
 
-  var isLoading = true.obs;
-  var sessionList = <Session>[].obs; // Danh sách đầy đủ từ API
+  // --- Dữ liệu bổ sung từ các bảng khác (để hiển thị) ---
+  final String subjectName;
+  final String className;
 
-  // BIẾN MỚI: Dùng để lọc
-  var selectedDate = DateTime.now().obs;
+  Session({
+    required this.sessionId,
+    required this.assignmentId,
+    required this.sessionDate,
+    required this.startPeriod,
+    required this.endPeriod,
+    required this.classroom,
+    this.content,
+    required this.status,
+    this.notes,
+    required this.subjectName,
+    required this.className,
+  });
 
-  @override
-  void onInit() {
-    super.onInit();
-    fetchSessions();
+  /// Factory constructor để tạo một đối tượng `Session` từ JSON.
+  /// Điều này rất quan trọng để chuyển đổi dữ liệu từ API thành một đối tượng Dart.
+  factory Session.fromJson(Map<String, dynamic> json) {
+    return Session(
+      sessionId: json['session_id'],
+      assignmentId: json['assignment_id'],
+      sessionDate: DateTime.parse(json['session_date']),
+      startPeriod: json['start_period'],
+      endPeriod: json['end_period'],
+      classroom: json['classroom'],
+      content: json['content'],
+      status: json['status'],
+      notes: json['notes'],
+      // Giả sử API của bạn trả về các trường này sau khi join bảng
+      subjectName: json['subject_name'] ?? 'Không có tên môn học',
+      className: json['class_name'] ?? 'Không có tên lớp',
+    );
   }
 
-  Future<void> fetchSessions() async {
-    try {
-      isLoading(true);
-      final sessions = await _apiService.getSessions();
-      sessionList.assignAll(sessions); // Gán vào danh sách đầy đủ
-    } catch (e) {
-      Get.snackbar('Lỗi', 'Không thể tải danh sách buổi học.');
-    } finally {
-      isLoading(false);
+  /// Getter để lấy chuỗi thời gian hiển thị, ví dụ: "7:00 - 9:40"
+  String get formattedTime {
+    // Đây là dữ liệu giả định, bạn nên có một cơ chế để ánh xạ tiết học sang giờ thực tế
+    const periodMap = {
+      1: "7:00", 2: "7:50", 3: "8:40",
+      4: "9:45", 5: "10:35", 6: "11:25",
+      7: "12:55", 8: "13:45", 9: "14:35",
+      10: "15:40", 11: "16:30", 12: "17:20",
+    };
+    final startTime = periodMap[startPeriod] ?? '--:--';
+    final endTime = periodMap[endPeriod] ?? '--:--';
+    return '$startTime - $endTime';
+  }
+
+  /// Getter để lấy thông tin trạng thái và màu sắc tương ứng
+  ({String text, Color color}) get statusDisplay {
+    switch (status.toUpperCase()) {
+      case 'TAUGHT':
+        return (text: 'Hoàn thành', color: Colors.green);
+      case 'ABSENT_APPROVED':
+        return (text: 'Nghỉ', color: Colors.orange);
+      case 'MAKEUP_TAUGHT':
+        return (text: 'Dạy bù', color: Colors.blue);
+      case 'NOT_TAUGHT':
+        return (text: 'Sắp diễn ra', color: Colors.cyan);
+      default:
+        return (text: 'Không xác định', color: Colors.grey);
     }
-  }
-
-  // HÀM MỚI: Để thay đổi ngày
-  void changeSelectedDate(DateTime date) {
-    selectedDate.value = date;
-  }
-
-  // GETTER MỚI: Tự động lọc danh sách
-  List<Session> get filteredSessions {
-
-    return sessionList.where((session) {
-      // So sánh Y-M-D (bỏ qua giờ, phút)
-      return session.sessionDate.year == selectedDate.value.year &&
-          session.sessionDate.month == selectedDate.value.month &&
-          session.sessionDate.day == selectedDate.value.day;
-    }).toList();
   }
 }

@@ -21,7 +21,6 @@ class AppTheme {
     colorScheme: ColorScheme.light(
       primary: Colors.blue.shade800,
       secondary: Colors.orange.shade700,
-      background: Colors.grey.shade100,
       error: Colors.red.shade700,
       surface: Colors.white,
     ),

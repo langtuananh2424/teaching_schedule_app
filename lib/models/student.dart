@@ -1,14 +1,25 @@
-import 'package:frontend_app/models/attendance.dart';
-
-// Model cho Sinh viên (Đã tách từ file cũ)
 class Student {
-  final String name;
-  final String studentId;
-  AttendanceStatus attendanceStatus; // Trạng thái điểm danh hiện tại
+  final int studentId;
+  final String studentCode;
+  final String fullName;
+  final int classId;
+  final String? className;
 
   Student({
-    required this.name,
     required this.studentId,
-    this.attendanceStatus = AttendanceStatus.present,
+    required this.studentCode,
+    required this.fullName,
+    required this.classId,
+    this.className,
   });
+
+  factory Student.fromJson(Map<String, dynamic> json) {
+    return Student(
+      studentId: json['studentId'] ?? json['student_id'] ?? 0,
+      studentCode: json['studentCode'] ?? json['student_code'] ?? '',
+      fullName: json['fullName'] ?? json['full_name'] ?? 'N/A',
+      classId: json['classId'] ?? json['class_id'] ?? 0,
+      className: json['className'] ?? json['class_name'],
+    );
+  }
 }
