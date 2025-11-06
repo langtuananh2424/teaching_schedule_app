@@ -121,18 +121,40 @@ class Session {
   String get realtimeStatus {
     final now = DateTime.now();
 
-    // Nếu đã có trạng thái hoàn thành hoặc nghỉ từ database
-    if (status.toUpperCase() == 'TAUGHT' ||
-        status.toUpperCase() == 'ABSENT_APPROVED' ||
-        status.toUpperCase() == 'MAKEUP_TAUGHT') {
-      return status;
+    // So sánh ngày trước
+    final todayDate = DateTime(now.year, now.month, now.day);
+    final sessionOnlyDate = DateTime(
+      sessionDate.year,
+      sessionDate.month,
+      sessionDate.day,
+    );
+
+    // Nếu session ở ngày tương lai
+    if (sessionOnlyDate.isAfter(todayDate)) {
+      return 'NOT_TAUGHT'; // Sắp diễn ra (ngày trong tương lai)
     }
 
-    // Kiểm tra thời gian thực
+    // Nếu session ở ngày quá khứ
+    if (sessionOnlyDate.isBefore(todayDate)) {
+      // Ưu tiên status đặc biệt từ database (nghỉ, dạy bù)
+      if (status.toUpperCase() == 'ABSENT_APPROVED' ||
+          status.toUpperCase() == 'MAKEUP_TAUGHT') {
+        return status;
+      }
+      return 'TAUGHT'; // Tự động hoàn thành nếu qua ngày
+    }
+
+    // Cùng ngày -> Kiểm tra thời gian thực trong ngày
     if (now.isBefore(startTime)) {
-      return 'NOT_TAUGHT'; // Sắp diễn ra
+      return 'NOT_TAUGHT'; // Sắp diễn ra (chưa đến giờ)
     } else if (now.isAfter(endTime)) {
-      return 'TAUGHT'; // Đã kết thúc -> Hoàn thành
+      // Đã qua giờ học -> Tự động hoàn thành
+      // Trừ trường hợp đặc biệt (nghỉ có phép, dạy bù)
+      if (status.toUpperCase() == 'ABSENT_APPROVED' ||
+          status.toUpperCase() == 'MAKEUP_TAUGHT') {
+        return status;
+      }
+      return 'TAUGHT'; // Tự động hoàn thành
     } else {
       return 'ONGOING'; // Đang diễn ra
     }

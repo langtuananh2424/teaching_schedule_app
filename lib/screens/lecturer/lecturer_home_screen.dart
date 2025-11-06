@@ -6,6 +6,7 @@ import '../../models/session.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import 'session_details_screen.dart';
+import 'profile_screen.dart';
 
 class LecturerHomeScreen extends StatefulWidget {
   const LecturerHomeScreen({super.key});
@@ -97,14 +98,17 @@ class _LecturerHomeScreenState extends State<LecturerHomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Chào, $userName'),
+        leading: IconButton(
+          icon: const Icon(Icons.person_outline),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileScreen()),
+            );
+          },
+        ),
+        title: Text('Chào, Thầy $userName'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.person_outline),
-            onPressed: () {
-              /* Điều hướng đến trang hồ sơ */
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => authService.logout(),

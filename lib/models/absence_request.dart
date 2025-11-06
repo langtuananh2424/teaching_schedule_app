@@ -5,45 +5,52 @@ class AbsenceRequest {
   final String requestType;
   final String reason;
   final DateTime createdAt;
-  final String status;
-  final String? approverName;
+
+  // Backend mới có 2 status thay vì 1
+  final String managerStatus;
+  final String academicAffairsStatus;
+
+  // Deprecated fields - giữ lại để backward compatible
+  String get status => managerStatus; // Dùng managerStatus làm status chính
+  final String? approverName; // Có thể không có trong response mới
 
   // Thông tin buổi học gốc
-  final int? lecturerId;
+  final int? sessionId; // Có thể không có trong response mới
+  final int? lecturerId; // Có thể không có trong response mới
   final String lecturerName;
-  final int? sessionId;
   final String subjectName;
   final String className;
   final DateTime sessionDate;
-  final int? startPeriod;
-  final int? endPeriod;
-  final String? classroom;
+  final int startPeriod;
+  final int endPeriod;
+  final String classroom;
 
   // Thông tin dạy bù (nếu có)
-  final int? makeupId;
+  final int? makeupId; // Có thể không có trong response mới
   final DateTime? makeupCreatedAt;
   final DateTime? makeupDate;
   final int? makeupStartPeriod;
   final int? makeupEndPeriod;
   final String? makeupClassroom;
-  final String? makeupStatus;
+  final String? makeupStatus; // Có thể không có trong response mới
 
   AbsenceRequest({
     required this.id,
     required this.requestType,
     required this.reason,
     required this.createdAt,
-    required this.status,
+    required this.managerStatus,
+    required this.academicAffairsStatus,
     this.approverName,
+    this.sessionId,
     this.lecturerId,
     required this.lecturerName,
-    this.sessionId,
     required this.subjectName,
     required this.className,
     required this.sessionDate,
-    this.startPeriod,
-    this.endPeriod,
-    this.classroom,
+    required this.startPeriod,
+    required this.endPeriod,
+    required this.classroom,
     this.makeupId,
     this.makeupCreatedAt,
     this.makeupDate,
@@ -60,17 +67,25 @@ class AbsenceRequest {
       requestType: json['requestType'] ?? 'Xin nghỉ dạy',
       reason: json['reason'] ?? '',
       createdAt: DateTime.parse(json['createdAt']),
-      status: json['status'],
+
+      // Backend mới có 2 status, cũ có 1 status
+      managerStatus: json['managerStatus'] ?? json['status'] ?? 'PENDING',
+      academicAffairsStatus:
+          json['academicAffairsStatus'] ?? json['status'] ?? 'PENDING',
+
+      // Optional fields
       approverName: json['approverName'],
-      lecturerId: json['lecturerId'],
-      lecturerName: json['lecturerName'] ?? 'N/A',
       sessionId: json['sessionId'],
+      lecturerId: json['lecturerId'],
+
+      lecturerName: json['lecturerName'] ?? 'N/A',
       subjectName: json['subjectName'] ?? 'N/A',
       className: json['className'] ?? 'N/A',
       sessionDate: DateTime.parse(json['sessionDate']),
-      startPeriod: json['startPeriod'],
-      endPeriod: json['endPeriod'],
-      classroom: json['classroom'],
+      startPeriod: json['startPeriod'] ?? 0,
+      endPeriod: json['endPeriod'] ?? 0,
+      classroom: json['classroom'] ?? '',
+
       makeupId: json['makeupId'],
       makeupCreatedAt: json['makeupCreatedAt'] != null
           ? DateTime.parse(json['makeupCreatedAt'])

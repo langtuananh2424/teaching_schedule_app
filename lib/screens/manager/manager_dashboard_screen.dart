@@ -6,8 +6,11 @@ import '../../models/absence_request.dart';
 import '../../models/makeup_session.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
+import 'absence_history_screen.dart';
+import 'makeup_history_screen.dart';
 import 'reports_screen.dart';
 import 'request_approval_screen.dart';
+import 'profile_screen.dart';
 
 class ManagerDashboardScreen extends StatefulWidget {
   const ManagerDashboardScreen({super.key});
@@ -22,7 +25,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
   final List<Widget> _widgetOptions = <Widget>[
     const DashboardContent(), // Nội dung chính của dashboard
     const ReportsScreen(),
-    const Center(child: Text('Tài khoản')), // Placeholder cho màn hình Profile
+    const ProfileScreen(), // Tab tài khoản
   ];
 
   void _onItemTapped(int index) {
@@ -82,18 +85,52 @@ class _DashboardContentState extends State<DashboardContent> {
   }
 
   void _fetchData() {
-    final token = Provider.of<AuthService>(context, listen: false).token;
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final token = authService.token;
+    final userRole = authService.userRole;
+
     if (token != null) {
-      _summaryFuture = _apiService.getDashboardSummary(token).catchError((
-        error,
-      ) {
-        // Nếu API lỗi (backend chưa implement), trả về dữ liệu mẫu
-        return DashboardSummary(
-          pendingAbsenceCount: 0,
-          pendingMakeupCount: 0,
-          recentRequests: [],
-        );
-      });
+      // Lấy summary và filter theo role
+      _summaryFuture = _apiService
+          .getDashboardSummary(token)
+          .then((summary) {
+            // Manager: đếm requests có managerStatus=PENDING
+            // Admin: đếm requests có academicAffairsStatus=PENDING
+            return _apiService.getAbsenceRequests(token).then((allRequests) {
+              int pendingAbsenceCount;
+              if (userRole == 'ROLE_MANAGER') {
+                pendingAbsenceCount = allRequests
+                    .where((r) => r.managerStatus == 'PENDING')
+                    .length;
+              } else if (userRole == 'ROLE_ADMIN') {
+                pendingAbsenceCount = allRequests
+                    .where((r) => r.academicAffairsStatus == 'PENDING')
+                    .length;
+              } else {
+                pendingAbsenceCount = 0;
+              }
+
+              // Tương tự với makeup sessions
+              return _apiService
+                  .getMakeupSessions(token, status: 'PENDING')
+                  .then((makeupSessions) {
+                    return DashboardSummary(
+                      pendingAbsenceCount: pendingAbsenceCount,
+                      pendingMakeupCount: makeupSessions.length,
+                      recentRequests: summary.recentRequests,
+                    );
+                  });
+            });
+          })
+          .catchError((error) {
+            print('⚠️ Dashboard API error: $error');
+            // Nếu API lỗi, trả về dữ liệu mẫu
+            return DashboardSummary(
+              pendingAbsenceCount: 0,
+              pendingMakeupCount: 0,
+              recentRequests: [],
+            );
+          });
     } else {
       _summaryFuture = Future.error('Không tìm thấy token xác thực.');
     }
@@ -162,6 +199,54 @@ class _DashboardContentState extends State<DashboardContent> {
                       'Yêu cầu dạy bù chờ duyệt',
                       context,
                       RequestType.makeup,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Buttons to history screens
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AbsenceHistoryScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.history, size: 18),
+                      label: const Text(
+                        'Lịch sử yêu cầu nghỉ',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MakeupHistoryScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.event_note, size: 18),
+                      label: const Text(
+                        'Lịch sử dạy bù',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
                     ),
                   ),
                 ],

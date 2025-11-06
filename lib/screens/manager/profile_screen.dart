@@ -26,6 +26,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final authService = Provider.of<AuthService>(context, listen: false);
     final token = authService.token;
     final userEmail = authService.userEmail;
+    final userRole = authService.userRole;
 
     if (token == null) {
       setState(() {
@@ -49,36 +50,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
 
     try {
-      print('🔍 Loading lecturer profile data...');
-      print('👤 Name from token: ${authService.userName}');
-      print('📧 Email from token: $userEmail');
+      Map<String, dynamic> data;
 
-      // Gọi API để lấy danh sách tất cả giảng viên
-      print('📡 Calling API: /api/lecturers');
-      final response = await _apiService.get('api/lecturers', token: token);
+      if (userRole == 'ROLE_ADMIN') {
+        // Admin: Call /api/users/{id}
+        final userId = authService.userId;
+        print('[ADMIN] Loading from /api/users/$userId');
 
-      // Filter theo email từ token
-      List<dynamic> lecturerList = response as List<dynamic>;
-      print('� Total lecturers: ${lecturerList.length}');
+        final response =
+            await _apiService.get('api/users/$userId', token: token)
+                as Map<String, dynamic>;
 
-      final matchingLecturers = lecturerList
-          .where((lecturer) => lecturer['email'] == userEmail)
-          .toList();
+        // UserDTO format: {userId, email, role}
+        // Convert to display format similar to LecturerDTO
+        data = {
+          'fullName': response['email'] ?? userEmail,
+          'email': response['email'] ?? userEmail,
+          'role': response['role'] ?? userRole,
+          'lecturerId': response['userId'],
+          'lecturerCode': 'ADMIN',
+          'departmentName': 'Quản trị hệ thống',
+          'departmentId': 0,
+        };
+        print('[ADMIN] Loaded successfully');
+      } else {
+        // Manager/Lecturer: Call /api/lecturers
+        print('[MANAGER/LECTURER] Loading from /api/lecturers');
+        final response = await _apiService.get('api/lecturers', token: token);
 
-      if (matchingLecturers.isEmpty) {
-        throw Exception(
-          'Không tìm thấy thông tin giảng viên với email: $userEmail',
-        );
+        List<dynamic> lecturerList = response as List<dynamic>;
+        print('Total lecturers: ${lecturerList.length}');
+
+        final matchingLecturers = lecturerList
+            .where((lecturer) => lecturer['email'] == userEmail)
+            .toList();
+
+        if (matchingLecturers.isEmpty) {
+          throw Exception(
+            'Không tìm thấy thông tin giảng viên với email: $userEmail',
+          );
+        }
+
+        data = matchingLecturers.first as Map<String, dynamic>;
+        print('Loaded: ${data['fullName']}');
       }
-
-      final data = matchingLecturers.first as Map<String, dynamic>;
-
-      print('✅ Loaded profile successfully');
-      print('📝 Profile data from API:');
-      print('   - Name: ${data['fullName']}');
-      print('   - Email: ${data['email']}');
-      print('   - Lecturer ID: ${data['lecturerId']}');
-      print('   - Department: ${data['departmentName']}');
 
       setState(() {
         _profileData = data;

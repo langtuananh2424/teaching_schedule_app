@@ -21,9 +21,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthService()),
-      ],
+      providers: [ChangeNotifierProvider(create: (_) => AuthService())],
       child: MaterialApp(
         title: 'Teaching Schedule App',
         theme: AppTheme.lightTheme,
@@ -51,7 +49,8 @@ class AuthWrapper extends StatelessWidget {
         print("Giá trị thực tế của userRole: '${authService.userRole}'");
         // SỬA LỖI TẠI ĐÂY: Xóa bỏ câu lệnh `if (authService.isAuthenticated)` bị thừa
         // Logic sẽ đi thẳng vào kiểm tra vai trò
-        if (authService.userRole == 'ROLE_ADMIN') {
+        if (authService.userRole == 'ROLE_ADMIN' ||
+            authService.userRole == 'ROLE_MANAGER') {
           return const ManagerDashboardScreen();
         } else {
           return const LecturerHomeScreen();
