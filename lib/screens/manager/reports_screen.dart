@@ -37,9 +37,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
   String? _selectedDepartmentName;
   int? _selectedClassId;
 
-  int _absentPeriods = 0;
-  int _makeupPeriods = 0;
-  double _completionRate = 0.0;
+  // Kết quả báo cáo
+  int _totalPlannedPeriods = 0; // Tổng số tiết đăng ký
+  int _absentPeriods = 0; // Số tiết nghỉ (tự động đếm từ lịch)
+  int _makeupPeriods = 0; // Số tiết đã dạy bù
+  List<Map<String, dynamic>> _incompleteSessions =
+      []; // Danh sách lịch chưa hoàn thành
 
   @override
   void initState() {
@@ -61,21 +64,21 @@ class _ReportsScreenState extends State<ReportsScreen> {
       print('👤 User role: $userRole');
 
       final results = await Future.wait([
-        _apiService.getSemesters(token),
+        _apiService.getAcademicYears(token), // ✅ FIXED: Dùng endpoint đúng
         _apiService.getSubjects(token),
         _apiService.getLecturers(token),
         _apiService.getDepartments(token),
         _apiService.getClasses(token),
       ]);
 
-      final semesters = results[0] as List<Semester>;
+      final academicYears = results[0] as List<String>;
       var subjects = results[1] as List<FilterItem>;
       var lecturers = results[2] as List<FilterItem>;
       var departments = results[3] as List<FilterItem>;
       final classes = results[4] as List<FilterItem>;
 
       print('📊 Loaded data:');
-      print('   - Semesters: ${semesters.length}');
+      print('   - Academic years: ${academicYears.length}');
       print('   - Subjects: ${subjects.length}');
       print('   - Lecturers: ${lecturers.length}');
       print('   - Departments: ${departments.length}');
@@ -88,10 +91,29 @@ class _ReportsScreenState extends State<ReportsScreen> {
       if (userRole == 'ROLE_MANAGER') {
         try {
           print('🔍 Loading manager profile to get department...');
-          final lecturerId = authService.userId;
+
+          // ✅ FIX: Lấy lecturerId từ email, không dùng authService.userId
+          final email = authService.userEmail;
+          int? lecturerId;
+
+          if (email != null) {
+            final allLecturersData =
+                await _apiService.get('api/lecturers', token: token) as List;
+            final managerData = allLecturersData
+                .where((l) => l['email'] == email)
+                .toList();
+
+            if (managerData.isNotEmpty) {
+              lecturerId = managerData.first['lecturerId'] as int?;
+              print(
+                '✅ Found manager lecturerId: $lecturerId for email: $email',
+              );
+            }
+          }
+
           if (lecturerId != null) {
             // ĐÚNG: Dùng endpoint /api/lecturers/{id} theo Swagger
-            print('� Loading profile by ID: $lecturerId');
+            print('📋 Loading profile by ID: $lecturerId');
             final profileData =
                 await _apiService.get('api/lecturers/$lecturerId', token: token)
                     as Map<String, dynamic>;
@@ -101,7 +123,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               '✅ Manager department: $managerDepartment (ID: $managerDepartmentId)',
             );
           } else {
-            print('⚠️ No lecturer ID found in auth service');
+            print('⚠️ No lecturer ID found for manager');
           }
         } catch (e) {
           print('⚠️ Could not load manager profile: $e');
@@ -239,32 +261,25 @@ class _ReportsScreenState extends State<ReportsScreen> {
       }
 
       setState(() {
-        _semesters = semesters;
         _subjects = subjects;
         _lecturers = lecturers;
         _departments = departments;
         _classes = classes;
 
-        // Tách danh sách năm học từ semesters
-        _academicYears =
-            semesters
-                .map((s) => s.academicYear)
-                .where((year) => year != null)
-                .cast<String>()
-                .toSet()
-                .toList()
-              ..sort((a, b) => b.compareTo(a)); // Sắp xếp mới nhất lên đầu
+        // ✅ FIXED: Dùng academic years từ API, đã được sắp xếp ở backend
+        _academicYears = academicYears
+          ..sort((a, b) => b.compareTo(a)); // Sắp xếp mới nhất lên đầu
 
         _isLoading = false;
       });
 
       // Hiển thị thông báo nếu không có dữ liệu
-      if (semesters.isEmpty) {
+      if (academicYears.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                'Không có dữ liệu học kỳ. Vui lòng liên hệ quản trị viên.',
+                'Không có dữ liệu năm học. Vui lòng liên hệ quản trị viên.',
               ),
               backgroundColor: Colors.orange,
             ),
@@ -282,6 +297,36 @@ class _ReportsScreenState extends State<ReportsScreen> {
             content: Text('Lỗi tải dữ liệu: $e'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
+
+  // Load semesters khi chọn năm học
+  Future<void> _loadSemestersForAcademicYear(String academicYear) async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final token = authService.token;
+    if (token == null) return;
+
+    try {
+      print('📅 Loading semesters for academic year: $academicYear');
+      final semesters = await _apiService.getSemestersForYear(
+        token,
+        academicYear,
+      );
+      print('✅ Loaded ${semesters.length} semesters for $academicYear');
+
+      setState(() {
+        _semesters = semesters;
+      });
+    } catch (e) {
+      print('❌ Error loading semesters for $academicYear: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi tải học kỳ: $e'),
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -693,9 +738,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
     setState(() {
       _showSummary = false;
+      _totalPlannedPeriods = 0;
       _absentPeriods = 0;
       _makeupPeriods = 0;
-      _completionRate = 0.0;
+      _incompleteSessions = [];
     });
 
     if (mounted) {
@@ -750,41 +796,48 @@ class _ReportsScreenState extends State<ReportsScreen> {
       // Đếm số TIẾT đã dạy THỰC TẾ từ status TAUGHT
       int actualTaughtCount = 0; // Số tiết đã dạy
       int actualMakeupCount = 0; // Số tiết dạy bù
+      List<Map<String, dynamic>> incompleteSessions =
+          []; // Lịch chưa hoàn thành
 
       for (var schedule in schedules) {
         final status = schedule['status']?.toString();
         final startPeriod = schedule['startPeriod'] as int? ?? 0;
         final endPeriod = schedule['endPeriod'] as int? ?? 0;
         final periods = endPeriod - startPeriod + 1; // Số tiết của buổi này
+        final scheduleDate = schedule['scheduleDate']?.toString();
 
         if (status == 'TAUGHT') {
           actualTaughtCount += periods; // Đếm số tiết
         } else if (status == 'MAKEUP_TAUGHT') {
           actualMakeupCount += periods; // Đếm số tiết dạy bù
+        } else if (status == 'PENDING' ||
+            status == 'ABSENT' ||
+            status == 'MAKEUP_PENDING') {
+          // Lưu lịch chưa hoàn thành dạy
+          incompleteSessions.add({
+            'date': scheduleDate ?? 'N/A',
+            'startPeriod': startPeriod,
+            'endPeriod': endPeriod,
+            'periods': periods,
+            'status': status,
+            'classroom': schedule['classroom'] ?? 'N/A',
+          });
         }
       }
 
       print(
-        '📊 Counted from schedules: TAUGHT=$actualTaughtCount tiết, MAKEUP=$actualMakeupCount tiết',
+        '📊 Counted from schedules: TAUGHT=$actualTaughtCount tiết, MAKEUP=$actualMakeupCount tiết, INCOMPLETE=${incompleteSessions.length} buổi',
       );
 
       // Tính số tiết nghỉ = tổng kế hoạch - số tiết đã dạy
       final absentPeriods = totalPlanned - actualTaughtCount;
       final makeupPeriods = actualMakeupCount;
 
-      // Tỷ lệ hoàn thành = (tiết đã dạy + tiết bù) / tổng kế hoạch
-      final completionRate = totalPlanned > 0
-          ? (actualTaughtCount + actualMakeupCount) / totalPlanned * 100
-          : 0.0;
-
-      print(
-        '📈 Completion rate: ${completionRate.toStringAsFixed(1)}% (${actualTaughtCount + actualMakeupCount}/$totalPlanned tiết)',
-      );
-
       setState(() {
+        _totalPlannedPeriods = totalPlanned;
         _absentPeriods = absentPeriods;
         _makeupPeriods = makeupPeriods;
-        _completionRate = completionRate;
+        _incompleteSessions = incompleteSessions;
         _showSummary = true;
       });
     } catch (e) {
@@ -845,12 +898,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   }).toList(),
             onChanged: _academicYears.isEmpty
                 ? null
-                : (value) {
+                : (value) async {
                     setState(() {
                       _selectedAcademicYear = value;
                       _selectedSemesterId =
                           null; // Reset semester khi đổi năm học
+                      _semesters = []; // Clear old semesters
                     });
+                    // ✅ Load semesters cho năm học đã chọn
+                    if (value != null) {
+                      await _loadSemestersForAcademicYear(value);
+                    }
                   },
           ),
           const SizedBox(height: 16),
@@ -1079,24 +1137,105 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       ),
                       const Divider(),
                       const SizedBox(height: 8),
+
+                      // 1. Số tiết đăng ký (đầu tiên)
                       _buildReportRow(
-                        'Tổng số tiết nghỉ:',
+                        'Số tiết đăng ký:',
+                        '$_totalPlannedPeriods tiết',
+                        Colors.blue,
+                      ),
+                      const SizedBox(height: 8),
+
+                      // 2. Số tiết nghỉ (đếm tự động từ lịch)
+                      _buildReportRow(
+                        'Số tiết nghỉ:',
                         '$_absentPeriods tiết',
                         Colors.red,
                       ),
                       const SizedBox(height: 8),
+
+                      // 3. Số tiết đã dạy bù
                       _buildReportRow(
                         'Số tiết đã dạy bù:',
                         '$_makeupPeriods tiết',
                         Colors.green,
                       ),
-                      const SizedBox(height: 8),
-                      _buildReportRow(
-                        'Tỷ lệ hoàn thành:',
-                        '${_completionRate.toStringAsFixed(1)}%',
-                        Colors.blue,
-                      ),
                       const SizedBox(height: 16),
+
+                      // Hiển thị số lịch chưa hoàn thành
+                      if (_incompleteSessions.isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.orange.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.warning_amber,
+                                    color: Colors.orange.shade700,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Lịch chưa hoàn thành: ${_incompleteSessions.length} buổi',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.orange.shade900,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              // Hiển thị danh sách ngày chưa hoàn thành
+                              ..._incompleteSessions.take(5).map((session) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 6),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_today,
+                                        size: 14,
+                                        color: Colors.orange.shade700,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          '${session['date']} - Tiết ${session['startPeriod']}-${session['endPeriod']} (${session['periods']} tiết) - ${session['classroom']}',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.grey.shade800,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                              if (_incompleteSessions.length > 5)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    '... và ${_incompleteSessions.length - 5} buổi khác',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontStyle: FontStyle.italic,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
                       const Divider(),
                       const SizedBox(height: 8),
                       SizedBox(
@@ -1104,7 +1243,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         child: OutlinedButton.icon(
                           onPressed: _showDetailDialog,
                           icon: const Icon(Icons.list_alt),
-                          label: const Text('Xem chi tiết'),
+                          label: const Text('Xem chi tiết đầy đủ'),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),

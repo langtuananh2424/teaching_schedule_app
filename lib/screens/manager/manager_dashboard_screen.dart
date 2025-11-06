@@ -85,41 +85,134 @@ class _DashboardContentState extends State<DashboardContent> {
   }
 
   void _fetchData() {
+    print('🚀 _fetchData() called');
     final authService = Provider.of<AuthService>(context, listen: false);
     final token = authService.token;
     final userRole = authService.userRole;
 
+    print('🔑 Token exists: ${token != null}');
+    print('👤 User role: $userRole');
+
     if (token != null) {
+      print('📡 Starting API calls...');
       // Lấy summary và filter theo role
       _summaryFuture = _apiService
           .getDashboardSummary(token)
-          .then((summary) {
+          .then((summary) async {
+            print(
+              '✅ getDashboardSummary() returned: ${summary.recentRequests.length} recent requests',
+            );
             // Manager: đếm requests có managerStatus=PENDING
             // Admin: đếm requests có academicAffairsStatus=PENDING
-            return _apiService.getAbsenceRequests(token).then((allRequests) {
+            return _apiService.getAbsenceRequests(token).then((
+              allRequests,
+            ) async {
+              print(
+                '📊 Dashboard: Received ${allRequests.length} absence requests',
+              );
+              print('👤 User role: $userRole');
+
+              // ✅ SIMPLIFIED: Đếm đơn giản theo status, không filter department (tạm thời để test)
               int pendingAbsenceCount;
               if (userRole == 'ROLE_MANAGER') {
-                pendingAbsenceCount = allRequests
-                    .where((r) => r.managerStatus == 'PENDING')
-                    .length;
+                // Đếm requests có managerStatus = PENDING
+                print('🔍 Checking ROLE_MANAGER...');
+                final pendingRequests = allRequests.where((r) {
+                  print(
+                    '  Checking request: ${r.reason} - managerStatus: ${r.managerStatus}',
+                  );
+                  return r.managerStatus == 'PENDING';
+                }).toList();
+                pendingAbsenceCount = pendingRequests.length;
+                print('📋 Manager PENDING requests: $pendingAbsenceCount');
+                if (pendingRequests.isNotEmpty) {
+                  print('   Sample: ${pendingRequests.first.reason}');
+                }
               } else if (userRole == 'ROLE_ADMIN') {
-                pendingAbsenceCount = allRequests
-                    .where((r) => r.academicAffairsStatus == 'PENDING')
-                    .length;
+                print('🔍 Checking ROLE_ADMIN...');
+                final pendingRequests = allRequests.where((r) {
+                  print(
+                    '  Checking request: ${r.reason} - academicAffairsStatus: ${r.academicAffairsStatus}',
+                  );
+                  return r.academicAffairsStatus == 'PENDING';
+                }).toList();
+                pendingAbsenceCount = pendingRequests.length;
+                print('📋 Admin PENDING requests: $pendingAbsenceCount');
+                if (pendingRequests.isNotEmpty) {
+                  print(
+                    '   Sample: ${pendingRequests.first.reason} - Status: ${pendingRequests.first.academicAffairsStatus}',
+                  );
+                }
               } else {
                 pendingAbsenceCount = 0;
               }
 
-              // Tương tự với makeup sessions
-              return _apiService
-                  .getMakeupSessions(token, status: 'PENDING')
-                  .then((makeupSessions) {
-                    return DashboardSummary(
-                      pendingAbsenceCount: pendingAbsenceCount,
-                      pendingMakeupCount: makeupSessions.length,
-                      recentRequests: summary.recentRequests,
-                    );
-                  });
+              // Lấy makeup sessions và filter tương tự
+              return _apiService.getMakeupSessions(token, status: 'PENDING').then((
+                makeupSessions,
+              ) async {
+                int pendingMakeupCount = 0;
+
+                if (userRole == 'ROLE_MANAGER') {
+                  // Filter makeup sessions theo department
+                  final email = authService.userEmail;
+                  if (email != null) {
+                    try {
+                      final allLecturersData =
+                          await _apiService.get('api/lecturers', token: token)
+                              as List;
+                      final managerData = allLecturersData
+                          .where((l) => l['email'] == email)
+                          .toList();
+
+                      if (managerData.isNotEmpty) {
+                        final managerDepartment =
+                            managerData.first['departmentName'];
+
+                        final departmentLecturerNames = allLecturersData
+                            .where(
+                              (l) => l['departmentName'] == managerDepartment,
+                            )
+                            .map((l) => l['fullName']?.toString() ?? '')
+                            .where((name) => name.isNotEmpty)
+                            .toSet();
+
+                        // Filter makeup sessions by lecturer name
+                        final filteredMakeupSessions = makeupSessions
+                            .where(
+                              (m) => departmentLecturerNames.contains(
+                                m.lecturerName,
+                              ),
+                            )
+                            .toList();
+
+                        pendingMakeupCount = filteredMakeupSessions.length;
+                        print(
+                          '📋 Manager PENDING makeup sessions (filtered): $pendingMakeupCount',
+                        );
+                      }
+                    } catch (e) {
+                      print('⚠️ Error filtering makeup sessions: $e');
+                      pendingMakeupCount = 0;
+                    }
+                  } else {
+                    pendingMakeupCount = 0;
+                  }
+                } else if (userRole == 'ROLE_ADMIN') {
+                  pendingMakeupCount = makeupSessions.length;
+                  print(
+                    '📋 Admin PENDING makeup sessions: $pendingMakeupCount',
+                  );
+                } else {
+                  pendingMakeupCount = 0;
+                }
+
+                return DashboardSummary(
+                  pendingAbsenceCount: pendingAbsenceCount,
+                  pendingMakeupCount: pendingMakeupCount,
+                  recentRequests: summary.recentRequests,
+                );
+              });
             });
           })
           .catchError((error) {

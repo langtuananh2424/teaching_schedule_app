@@ -79,7 +79,26 @@ class _AbsenceHistoryScreenState extends State<AbsenceHistoryScreen> {
 
       if (userRole == 'ROLE_MANAGER') {
         try {
-          final lecturerId = authService.userId;
+          // ✅ FIX: Lấy lecturerId từ email, không dùng authService.userId
+          final email = authService.userEmail;
+          int? lecturerId;
+
+          if (email != null) {
+            print(
+              '🔍 Fetching manager lecturerId from /api/lecturers for email: $email',
+            );
+            final allLecturersData =
+                await _apiService.get('api/lecturers', token: token) as List;
+            final managerData = allLecturersData
+                .where((l) => l['email'] == email)
+                .toList();
+
+            if (managerData.isNotEmpty) {
+              lecturerId = managerData.first['lecturerId'] as int?;
+              print('✅ Found manager lecturerId: $lecturerId');
+            }
+          }
+
           if (lecturerId == null) {
             throw Exception('Không tìm thấy ID giảng viên');
           }

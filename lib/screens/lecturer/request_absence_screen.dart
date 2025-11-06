@@ -43,60 +43,46 @@ class _RequestAbsenceScreenState extends State<RequestAbsenceScreen> {
   Future<void> _submitRequest() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Validate makeup fields if checkbox is checked
-    if (_includeMakeup) {
-      if (_makeupDate == null) {
-        _showError('Vui lòng chọn ngày dạy bù');
-        return;
-      }
-      if (_makeupStartPeriod == null) {
-        _showError('Vui lòng chọn tiết bắt đầu');
-        return;
-      }
-      if (_makeupEndPeriod == null) {
-        _showError('Vui lòng chọn tiết kết thúc');
-        return;
-      }
-      if (_makeupClassroom == null || _makeupClassroom!.isEmpty) {
-        _showError('Vui lòng nhập phòng học');
-        return;
-      }
+    // Validate makeup date separately (không có validator cho ListTile)
+    if (_includeMakeup && _makeupDate == null) {
+      _showError('Vui lòng chọn ngày dạy bù');
+      return;
     }
 
     final authService = Provider.of<AuthService>(context, listen: false);
     final token = authService.token;
-
-    // WORKAROUND: Lấy lecturerId từ session data thay vì từ token
-    // Vì backend JWT token không chứa lecturerId
-    int? lecturerId = authService.userId;
-
-    // Nếu không có userId từ token, thử lấy từ API sessions
-    if (lecturerId == null) {
-      try {
-        print('⚠️ Token không có lecturerId, thử lấy từ sessions API...');
-        final email = authService.userEmail;
-        if (email != null) {
-          final sessions = await _apiService.getSessions(token!, email);
-          if (sessions.isNotEmpty) {
-            // Lấy lecturerId từ assignment của session đầu tiên
-            // (Cần backend trả về lecturerId trong session response)
-            print('📋 Found ${sessions.length} sessions for email: $email');
-            // TODO: Backend cần trả về lecturerId trong SessionDTO
-          }
-        }
-      } catch (e) {
-        print('❌ Không thể lấy lecturerId từ sessions: $e');
-      }
-    }
 
     if (token == null) {
       _showError('Vui lòng đăng nhập lại');
       return;
     }
 
+    // ✅ FIX: Lấy lecturerId từ API /api/lecturers bằng email
+    // Không dùng authService.userId vì JWT userId không khớp với database lecturerId
+    int? lecturerId;
+    final email = authService.userEmail;
+
+    if (email != null) {
+      try {
+        print('🔍 Fetching lecturerId from /api/lecturers for email: $email');
+        final response =
+            await _apiService.get('api/lecturers', token: token) as List;
+        final lecturers = response.where((l) => l['email'] == email).toList();
+
+        if (lecturers.isNotEmpty) {
+          lecturerId = lecturers.first['lecturerId'] as int?;
+          print('✅ Found lecturerId: $lecturerId for email: $email');
+        } else {
+          print('❌ No lecturer found for email: $email');
+        }
+      } catch (e) {
+        print('❌ Error fetching lecturerId: $e');
+      }
+    }
+
     if (lecturerId == null) {
       _showError(
-        'Không tìm thấy thông tin giảng viên. Backend cần thêm lecturerId vào JWT token.',
+        'Không tìm thấy thông tin giảng viên. Vui lòng liên hệ quản trị viên.',
       );
       return;
     }
@@ -297,8 +283,16 @@ Vui lòng thử với buổi học khác hoặc liên hệ quản trị viên.
                     CheckboxListTile(
                       title: const Text('Đề xuất lịch dạy bù'),
                       value: _includeMakeup,
-                      onChanged: (value) =>
-                          setState(() => _includeMakeup = value ?? false),
+                      onChanged: (value) {
+                        setState(() {
+                          _includeMakeup = value ?? false;
+                          // Set giá trị mặc định khi tích checkbox
+                          if (_includeMakeup) {
+                            _makeupStartPeriod ??= widget.session.startPeriod;
+                            _makeupEndPeriod ??= widget.session.endPeriod;
+                          }
+                        });
+                      },
                     ),
 
                     if (_includeMakeup) ...[
@@ -321,6 +315,12 @@ Vui lòng thử với buổi học khác hoặc liên hệ quản trị viên.
                           border: OutlineInputBorder(),
                         ),
                         value: _makeupStartPeriod,
+                        validator: (value) {
+                          if (_includeMakeup && value == null) {
+                            return 'Vui lòng chọn tiết bắt đầu';
+                          }
+                          return null;
+                        },
                         items: List.generate(12, (i) => i + 1)
                             .map(
                               (p) => DropdownMenuItem(
@@ -340,6 +340,18 @@ Vui lòng thử với buổi học khác hoặc liên hệ quản trị viên.
                           border: OutlineInputBorder(),
                         ),
                         value: _makeupEndPeriod,
+                        validator: (value) {
+                          if (_includeMakeup && value == null) {
+                            return 'Vui lòng chọn tiết kết thúc';
+                          }
+                          if (_includeMakeup &&
+                              _makeupStartPeriod != null &&
+                              value != null &&
+                              value < _makeupStartPeriod!) {
+                            return 'Tiết kết thúc phải >= tiết bắt đầu';
+                          }
+                          return null;
+                        },
                         items: List.generate(12, (i) => i + 1)
                             .map(
                               (p) => DropdownMenuItem(
@@ -358,6 +370,13 @@ Vui lòng thử với buổi học khác hoặc liên hệ quản trị viên.
                           labelText: 'Phòng học *',
                           border: OutlineInputBorder(),
                         ),
+                        validator: (value) {
+                          if (_includeMakeup &&
+                              (value == null || value.isEmpty)) {
+                            return 'Vui lòng nhập phòng học';
+                          }
+                          return null;
+                        },
                         onChanged: (value) => _makeupClassroom = value,
                       ),
                     ],

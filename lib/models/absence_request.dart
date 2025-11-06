@@ -63,7 +63,9 @@ class AbsenceRequest {
   // The factory constructor is updated to handle the new property
   factory AbsenceRequest.fromJson(Map<String, dynamic> json) {
     return AbsenceRequest(
-      id: json['id'],
+      id:
+          json['absenceRequestId'] ??
+          json['id'], // ✅ FIX: Backend dùng absenceRequestId
       requestType: json['requestType'] ?? 'Xin nghỉ dạy',
       reason: json['reason'] ?? '',
       createdAt: DateTime.parse(json['createdAt']),

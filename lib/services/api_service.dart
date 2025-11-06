@@ -269,6 +269,46 @@ class ApiService {
     }
   }
 
+  /// Lấy danh sách tất cả các năm học có sẵn
+  /// Endpoint: GET /api/semesters/academic-years
+  /// Return: List<String> (VD: ["2024-2025", "2023-2024"])
+  Future<List<String>> getAcademicYears(String token) async {
+    try {
+      print('🔍 Loading academic years from /api/semesters/academic-years');
+      final response =
+          await get('api/semesters/academic-years', token: token) as List;
+      final academicYears = response.cast<String>();
+      print('✅ Loaded ${academicYears.length} academic years: $academicYears');
+      return academicYears;
+    } catch (e) {
+      print('❌ Error loading academic years: $e');
+      throw Exception('Không thể tải danh sách năm học: $e');
+    }
+  }
+
+  /// Lấy danh sách semesters cho một năm học cụ thể
+  /// Endpoint: GET /api/semesters?academicYear={year}
+  /// Return: List<Semester>
+  Future<List<Semester>> getSemestersForYear(
+    String token,
+    String academicYear,
+  ) async {
+    try {
+      print('📅 Loading semesters for year: $academicYear');
+      final response =
+          await get('api/semesters?academicYear=$academicYear', token: token)
+              as List;
+      final semesters = response
+          .map((json) => Semester.fromJson(json))
+          .toList();
+      print('✅ Loaded ${semesters.length} semesters for $academicYear');
+      return semesters;
+    } catch (e) {
+      print('❌ Error loading semesters for $academicYear: $e');
+      throw Exception('Không thể tải học kỳ cho năm $academicYear: $e');
+    }
+  }
+
   Future<List<FilterItem>> getLecturers(String token) async {
     final response = await get('api/lecturers', token: token) as List;
 
