@@ -95,16 +95,8 @@ class _DashboardContentState extends State<DashboardContent> {
 
     if (token != null) {
       print('📡 Starting API calls...');
-      // Lấy summary và filter theo role
-      _summaryFuture = _apiService
-          .getDashboardSummary(token)
-          .then((summary) async {
-            print(
-              '✅ getDashboardSummary() returned: ${summary.recentRequests.length} recent requests',
-            );
-            // Manager: đếm requests có managerStatus=PENDING
-            // Admin: đếm requests có academicAffairsStatus=PENDING
-            return _apiService.getAbsenceRequests(token).then((
+      // Bỏ getDashboardSummary (endpoint không tồn tại), lấy data trực tiếp
+      _summaryFuture = _apiService.getAbsenceRequests(token).then((
               allRequests,
             ) async {
               print(
@@ -112,21 +104,67 @@ class _DashboardContentState extends State<DashboardContent> {
               );
               print('👤 User role: $userRole');
 
-              // ✅ SIMPLIFIED: Đếm đơn giản theo status, không filter department (tạm thời để test)
+              // Đếm requests theo department
               int pendingAbsenceCount;
               if (userRole == 'ROLE_MANAGER') {
-                // Đếm requests có managerStatus = PENDING
-                print('🔍 Checking ROLE_MANAGER...');
-                final pendingRequests = allRequests.where((r) {
-                  print(
-                    '  Checking request: ${r.reason} - managerStatus: ${r.managerStatus}',
-                  );
-                  return r.managerStatus == 'PENDING';
-                }).toList();
-                pendingAbsenceCount = pendingRequests.length;
-                print('📋 Manager PENDING requests: $pendingAbsenceCount');
-                if (pendingRequests.isNotEmpty) {
-                  print('   Sample: ${pendingRequests.first.reason}');
+                print('🔍 [DASHBOARD] Manager counting absence requests...');
+                
+                final email = authService.userEmail;
+                if (email != null) {
+                  try {
+                    // Lấy danh sách lecturers
+                    final allLecturersData =
+                        await _apiService.get('api/lecturers', token: token)
+                            as List;
+                    
+                    // Tìm manager để lấy department
+                    final managerData = allLecturersData
+                        .where((l) => l['email'] == email)
+                        .toList();
+                    
+                    if (managerData.isNotEmpty) {
+                      final managerDepartment = managerData.first['departmentName'];
+                      print('👔 Manager department: $managerDepartment');
+                      
+                      // Lấy tên lecturers trong khoa
+                      final departmentLecturerNames = allLecturersData
+                          .where((l) => l['departmentName'] == managerDepartment)
+                          .map((l) => l['fullName']?.toString() ?? '')
+                          .where((name) => name.isNotEmpty)
+                          .toSet();
+                      
+                      print('📊 Department has ${departmentLecturerNames.length} lecturers');
+                      print('📝 Lecturer names in department: $departmentLecturerNames');
+                      
+                      // Debug: In ra requests để check
+                      print('📝 Checking ${allRequests.length} requests:');
+                      for (var i = 0; i < allRequests.length && i < 5; i++) {
+                        final r = allRequests[i];
+                        print('   - Request ${r.id}: lecturer="${r.lecturerName}", managerStatus=${r.managerStatus}');
+                      }
+                      
+                      // ✅ Filter theo tên + PENDING status
+                      final filteredRequests = allRequests.where((r) {
+                        final isInDepartment = departmentLecturerNames.contains(r.lecturerName);
+                        final isPending = r.managerStatus == 'PENDING';
+                        return isInDepartment && isPending;
+                      }).toList();
+                      
+                      pendingAbsenceCount = filteredRequests.length;
+                      print(
+                        '✅ Manager PENDING requests (filtered): $pendingAbsenceCount',
+                      );
+                    } else {
+                      print('❌ Manager not found in lecturers');
+                      pendingAbsenceCount = 0;
+                    }
+                  } catch (e) {
+                    print('⚠️ Error filtering absence requests: $e');
+                    pendingAbsenceCount = 0;
+                  }
+                } else {
+                  print('❌ Manager email is null');
+                  pendingAbsenceCount = 0;
                 }
               } else if (userRole == 'ROLE_ADMIN') {
                 print('🔍 Checking ROLE_ADMIN...');
@@ -147,61 +185,88 @@ class _DashboardContentState extends State<DashboardContent> {
                 pendingAbsenceCount = 0;
               }
 
-              // Lấy makeup sessions và filter tương tự
-              return _apiService.getMakeupSessions(token, status: 'PENDING').then((
-                makeupSessions,
+              // Lấy makeup sessions (lấy tất cả, filter ở client)
+              return _apiService.getMakeupSessions(token).then((
+                allMakeupSessions,
               ) async {
+                print('📊 Dashboard: Received ${allMakeupSessions.length} makeup sessions');
+                
                 int pendingMakeupCount = 0;
 
                 if (userRole == 'ROLE_MANAGER') {
-                  // Filter makeup sessions theo department
+                  print('🔍 [DASHBOARD] Manager counting makeup sessions...');
+                  
                   final email = authService.userEmail;
                   if (email != null) {
                     try {
+                      // Lấy danh sách lecturers
                       final allLecturersData =
                           await _apiService.get('api/lecturers', token: token)
                               as List;
+                      
+                      // Tìm manager để lấy department
                       final managerData = allLecturersData
                           .where((l) => l['email'] == email)
                           .toList();
 
                       if (managerData.isNotEmpty) {
-                        final managerDepartment =
-                            managerData.first['departmentName'];
-
+                        final managerDepartment = managerData.first['departmentName'];
+                        print('👔 Manager department: $managerDepartment');
+                        
+                        // Lấy tên lecturers trong khoa
                         final departmentLecturerNames = allLecturersData
-                            .where(
-                              (l) => l['departmentName'] == managerDepartment,
-                            )
+                            .where((l) => l['departmentName'] == managerDepartment)
                             .map((l) => l['fullName']?.toString() ?? '')
                             .where((name) => name.isNotEmpty)
                             .toSet();
 
-                        // Filter makeup sessions by lecturer name
-                        final filteredMakeupSessions = makeupSessions
-                            .where(
-                              (m) => departmentLecturerNames.contains(
-                                m.lecturerName,
-                              ),
-                            )
+                        print('📊 Department has ${departmentLecturerNames.length} lecturers');
+                        print('📝 Lecturer names in department: $departmentLecturerNames');
+                        
+                        // Debug: In ra makeup sessions để check
+                        print('📝 Checking ${allMakeupSessions.length} makeup sessions:');
+                        for (var i = 0; i < allMakeupSessions.length && i < 5; i++) {
+                          final m = allMakeupSessions[i];
+                          print('   - Makeup ${m.id}: lecturer="${m.lecturerName}", managerStatus=${m.managerStatus}');
+                        }
+
+                        // ✅ Đếm TẤT CẢ makeup sessions trong khoa (không filter status)
+                        final filteredMakeupSessions = allMakeupSessions
+                            .where((m) {
+                              return departmentLecturerNames.contains(m.lecturerName);
+                            })
                             .toList();
 
                         pendingMakeupCount = filteredMakeupSessions.length;
                         print(
-                          '📋 Manager PENDING makeup sessions (filtered): $pendingMakeupCount',
+                          '✅ Manager makeup sessions (filtered by department): $pendingMakeupCount',
                         );
+                      } else {
+                        print('❌ Manager not found in lecturers');
+                        pendingMakeupCount = 0;
                       }
                     } catch (e) {
                       print('⚠️ Error filtering makeup sessions: $e');
                       pendingMakeupCount = 0;
                     }
                   } else {
+                    print('❌ Manager email is null');
                     pendingMakeupCount = 0;
                   }
                 } else if (userRole == 'ROLE_ADMIN') {
-                  pendingMakeupCount = makeupSessions.length;
+                  print('🔍 [DASHBOARD] Admin counting makeup sessions...');
+                  
+                  // Debug: In ra makeup sessions để check
+                  print('📝 Checking ${allMakeupSessions.length} makeup sessions:');
+                  for (var i = 0; i < allMakeupSessions.length && i < 3; i++) {
+                    final m = allMakeupSessions[i];
+                    print('   - Makeup ${m.id}: lecturer="${m.lecturerName}", managerStatus=${m.managerStatus}, academicStatus=${m.academicAffairsStatus}');
+                  }
+                  
+                  // ✅ Đếm TẤT CẢ makeup sessions (không filter status)
+                  pendingMakeupCount = allMakeupSessions.length;
                   print(
-                    '📋 Admin PENDING makeup sessions: $pendingMakeupCount',
+                    '✅ Admin makeup sessions (total): $pendingMakeupCount',
                   );
                 } else {
                   pendingMakeupCount = 0;
@@ -210,11 +275,10 @@ class _DashboardContentState extends State<DashboardContent> {
                 return DashboardSummary(
                   pendingAbsenceCount: pendingAbsenceCount,
                   pendingMakeupCount: pendingMakeupCount,
-                  recentRequests: summary.recentRequests,
+                  recentRequests: [], // Không cần recent requests
                 );
               });
-            });
-          })
+            })
           .catchError((error) {
             print('⚠️ Dashboard API error: $error');
             // Nếu API lỗi, trả về dữ liệu mẫu
@@ -234,18 +298,27 @@ class _DashboardContentState extends State<DashboardContent> {
     return FutureBuilder<DashboardSummary>(
       future: _summaryFuture,
       builder: (context, snapshot) {
+        print('🔍 [BUILD] Dashboard snapshot state: ${snapshot.connectionState}');
+        print('🔍 [BUILD] Has data: ${snapshot.hasData}');
+        print('🔍 [BUILD] Has error: ${snapshot.hasError}');
+        
         if (snapshot.connectionState == ConnectionState.waiting) {
+          print('⏳ [BUILD] Waiting for data...');
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
+          print('❌ [BUILD] Error: ${snapshot.error}');
           return Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text('Đã xảy ra lỗi: ${snapshot.error}'),
           );
         }
         if (snapshot.hasData) {
-          return _buildDashboardUI(snapshot.data!);
+          final data = snapshot.data!;
+          print('✅ [BUILD] Has data! Absence: ${data.pendingAbsenceCount}, Makeup: ${data.pendingMakeupCount}');
+          return _buildDashboardUI(data);
         }
+        print('⚠️ [BUILD] No data!');
         return const Padding(
           padding: EdgeInsets.all(16.0),
           child: Text('Không có dữ liệu.'),
