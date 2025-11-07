@@ -6,6 +6,7 @@ import '../../models/session.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import 'session_details_screen.dart';
+import 'profile_screen.dart';
 
 class LecturerHomeScreen extends StatefulWidget {
   const LecturerHomeScreen({super.key});
@@ -50,8 +51,8 @@ class _LecturerHomeScreenState extends State<LecturerHomeScreen> {
     if (token != null && email != null) {
       setState(() {
         _sessionsFuture = _apiService.getSessions(token, email).then((
-            sessions,
-            ) {
+          sessions,
+        ) {
           print('📅 DEBUG - Received ${sessions.length} sessions from API');
           for (var session in sessions) {
             print(
@@ -97,14 +98,17 @@ class _LecturerHomeScreenState extends State<LecturerHomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Chào, $userName'),
+        leading: IconButton(
+          icon: const Icon(Icons.person_outline),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileScreen()),
+            );
+          },
+        ),
+        title: Text('Chào, Thầy $userName'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.person_outline),
-            onPressed: () {
-              /* Điều hướng đến trang hồ sơ */
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => authService.logout(),
@@ -241,21 +245,21 @@ class _LecturerHomeScreenState extends State<LecturerHomeScreen> {
 
                   final isToday =
                       date.year == today.year &&
-                          date.month == today.month &&
-                          date.day == today.day;
+                      date.month == today.month &&
+                      date.day == today.day;
 
                   final isSelected =
                       date.year == _selectedDate.year &&
-                          date.month == _selectedDate.month &&
-                          date.day == _selectedDate.day;
+                      date.month == _selectedDate.month &&
+                      date.day == _selectedDate.day;
 
                   // Kiểm tra ngày thuộc tháng khác
                   final isDifferentMonth = date.month != _selectedDate.month;
 
                   // Kiểm tra ngày này có lịch không
                   final hasSchedule = allSessions.any(
-                        (session) =>
-                    session.sessionDate.year == date.year &&
+                    (session) =>
+                        session.sessionDate.year == date.year &&
                         session.sessionDate.month == date.month &&
                         session.sessionDate.day == date.day,
                   );
@@ -267,9 +271,9 @@ class _LecturerHomeScreenState extends State<LecturerHomeScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       decoration: isSelected
                           ? BoxDecoration(
-                        color: Colors.blue.shade100,
-                        borderRadius: BorderRadius.circular(8),
-                      )
+                              color: Colors.blue.shade100,
+                              borderRadius: BorderRadius.circular(8),
+                            )
                           : null,
                       child: Column(
                         children: [

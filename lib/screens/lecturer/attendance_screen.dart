@@ -64,7 +64,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             status: 'PRESENT', // Mặc định có mặt
             studentName: 'Sinh viên ${studentId.toString().padLeft(2, '0')}',
             studentCode:
-            '64${widget.session.className.replaceAll(RegExp(r'[^0-9]'), '')}${studentId.toString().padLeft(3, '0')}',
+                '64${widget.session.className.replaceAll(RegExp(r'[^0-9]'), '')}${studentId.toString().padLeft(3, '0')}',
           );
         }).toList();
 
@@ -132,13 +132,13 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             IconButton(
               icon: _isSaving
                   ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
                   : const Icon(Icons.save),
               onPressed: _isSaving ? null : _saveAttendance,
             ),
@@ -148,126 +148,126 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _attendanceList.isEmpty
           ? const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.people_outline, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('Không có sinh viên trong lớp này'),
-          ],
-        ),
-      )
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.people_outline, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text('Không có sinh viên trong lớp này'),
+                ],
+              ),
+            )
           : Column(
-        children: [
-          // Session info
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.blue[50],
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '${widget.session.subjectName} - ${widget.session.className}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text('Phòng: ${widget.session.classroom}'),
-                Text(
-                  'Tiết: ${widget.session.startPeriod}-${widget.session.endPeriod}',
-                ),
-              ],
-            ),
-          ),
-          // Quick actions
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () => _markAll('PRESENT'),
-                  icon: const Icon(Icons.check_circle, size: 18),
-                  label: const Text('Tất cả có mặt'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                  ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: () => _markAll('ABSENT'),
-                  icon: const Icon(Icons.cancel, size: 18),
-                  label: const Text('Tất cả vắng'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          // Student list
-          Expanded(
-            child: ListView.builder(
-              itemCount: _attendanceList.length,
-              itemBuilder: (context, index) {
-                final student = _attendanceList[index];
-                final status =
-                    _attendanceStatus[student.studentId] ?? 'ABSENT';
-
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: _getStatusColor(status),
-                      child: Text(
-                        '${index + 1}',
-                        style: const TextStyle(color: Colors.white),
+                // Session info
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  color: Colors.blue[50],
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${widget.session.subjectName} - ${widget.session.className}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    title: Text(student.studentName),
-                    subtitle: Text(student.studentCode),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildStatusButton(
-                          'PRESENT',
-                          status,
-                          student.studentId,
-                        ),
-                        const SizedBox(width: 4),
-                        _buildStatusButton(
-                          'LATE',
-                          status,
-                          student.studentId,
-                        ),
-                        const SizedBox(width: 4),
-                        _buildStatusButton(
-                          'ABSENT',
-                          status,
-                          student.studentId,
-                        ),
-                      ],
-                    ),
+                      const SizedBox(height: 4),
+                      Text('Phòng: ${widget.session.classroom}'),
+                      Text(
+                        'Tiết: ${widget.session.startPeriod}-${widget.session.endPeriod}',
+                      ),
+                    ],
                   ),
-                );
-              },
+                ),
+                // Quick actions
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () => _markAll('PRESENT'),
+                        icon: const Icon(Icons.check_circle, size: 18),
+                        label: const Text('Tất cả có mặt'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () => _markAll('ABSENT'),
+                        icon: const Icon(Icons.cancel, size: 18),
+                        label: const Text('Tất cả vắng'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                // Student list
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: _attendanceList.length,
+                    itemBuilder: (context, index) {
+                      final student = _attendanceList[index];
+                      final status =
+                          _attendanceStatus[student.studentId] ?? 'ABSENT';
+
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: _getStatusColor(status),
+                            child: Text(
+                              '${index + 1}',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ),
+                          title: Text(student.studentName),
+                          subtitle: Text(student.studentCode),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildStatusButton(
+                                'PRESENT',
+                                status,
+                                student.studentId,
+                              ),
+                              const SizedBox(width: 4),
+                              _buildStatusButton(
+                                'LATE',
+                                status,
+                                student.studentId,
+                              ),
+                              const SizedBox(width: 4),
+                              _buildStatusButton(
+                                'ABSENT',
+                                status,
+                                student.studentId,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
   Widget _buildStatusButton(
-      String targetStatus,
-      String currentStatus,
-      int studentId,
-      ) {
+    String targetStatus,
+    String currentStatus,
+    int studentId,
+  ) {
     final isSelected = currentStatus == targetStatus;
     final colors = {
       'PRESENT': Colors.green,

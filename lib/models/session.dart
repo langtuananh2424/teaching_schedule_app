@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class Session {
@@ -40,7 +39,7 @@ class Session {
       status: json['status'],
       notes: json['notes'],
       subjectName:
-      json['subjectName'] ?? json['subject_name'] ?? 'Không có tên môn học',
+          json['subjectName'] ?? json['subject_name'] ?? 'Không có tên môn học',
       className: json['className'] ?? json['class_name'] ?? 'Không có tên lớp',
     );
   }
@@ -122,18 +121,40 @@ class Session {
   String get realtimeStatus {
     final now = DateTime.now();
 
-    // Nếu đã có trạng thái hoàn thành hoặc nghỉ từ database
-    if (status.toUpperCase() == 'TAUGHT' ||
-        status.toUpperCase() == 'ABSENT_APPROVED' ||
-        status.toUpperCase() == 'MAKEUP_TAUGHT') {
-      return status;
+    // So sánh ngày trước
+    final todayDate = DateTime(now.year, now.month, now.day);
+    final sessionOnlyDate = DateTime(
+      sessionDate.year,
+      sessionDate.month,
+      sessionDate.day,
+    );
+
+    // Nếu session ở ngày tương lai
+    if (sessionOnlyDate.isAfter(todayDate)) {
+      return 'NOT_TAUGHT'; // Sắp diễn ra (ngày trong tương lai)
     }
 
-    // Kiểm tra thời gian thực
+    // Nếu session ở ngày quá khứ
+    if (sessionOnlyDate.isBefore(todayDate)) {
+      // Ưu tiên status đặc biệt từ database (nghỉ, dạy bù)
+      if (status.toUpperCase() == 'ABSENT_APPROVED' ||
+          status.toUpperCase() == 'MAKEUP_TAUGHT') {
+        return status;
+      }
+      return 'TAUGHT'; // Tự động hoàn thành nếu qua ngày
+    }
+
+    // Cùng ngày -> Kiểm tra thời gian thực trong ngày
     if (now.isBefore(startTime)) {
-      return 'NOT_TAUGHT'; // Sắp diễn ra
+      return 'NOT_TAUGHT'; // Sắp diễn ra (chưa đến giờ)
     } else if (now.isAfter(endTime)) {
-      return 'TAUGHT'; // Đã kết thúc -> Hoàn thành
+      // Đã qua giờ học -> Tự động hoàn thành
+      // Trừ trường hợp đặc biệt (nghỉ có phép, dạy bù)
+      if (status.toUpperCase() == 'ABSENT_APPROVED' ||
+          status.toUpperCase() == 'MAKEUP_TAUGHT') {
+        return status;
+      }
+      return 'TAUGHT'; // Tự động hoàn thành
     } else {
       return 'ONGOING'; // Đang diễn ra
     }
@@ -154,8 +175,8 @@ class Session {
         return (text: 'Đang diễn ra', color: const Color(0xFF2196F3)); // Blue
       case 'NOT_TAUGHT':
         return (
-        text: 'Sắp diễn ra',
-        color: const Color(0xFF03A9F4),
+          text: 'Sắp diễn ra',
+          color: const Color(0xFF03A9F4),
         ); // Light Blue
       default:
         return (text: 'Không xác định', color: Colors.grey);

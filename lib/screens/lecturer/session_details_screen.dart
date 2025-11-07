@@ -88,8 +88,8 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
     // Logic hiển thị nút theo trạng thái
     final canEditContent =
         realtimeStatus == 'NOT_TAUGHT' ||
-            realtimeStatus == 'ONGOING' ||
-            realtimeStatus == 'ABSENT_APPROVED';
+        realtimeStatus == 'ONGOING' ||
+        realtimeStatus == 'ABSENT_APPROVED';
 
     final canRequestAbsence = realtimeStatus == 'NOT_TAUGHT';
 
@@ -131,10 +131,10 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
               onPressed: (canEditContent && !_isSaving) ? _saveContent : null,
               child: _isSaving
                   ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : const Text('Lưu nội dung'),
             ),
 

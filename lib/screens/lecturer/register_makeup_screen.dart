@@ -113,11 +113,11 @@ class _RegisterMakeupScreenState extends State<RegisterMakeupScreen> {
 
     if (widget.absenceRequest != null) {
       absentInfo =
-      'Buổi đã nghỉ: ${widget.absenceRequest!.subjectName} - ${widget.absenceRequest!.className}\n'
+          'Buổi đã nghỉ: ${widget.absenceRequest!.subjectName} - ${widget.absenceRequest!.className}\n'
           'Ngày nghỉ: ${DateFormat('dd/MM/yyyy').format(widget.absenceRequest!.sessionDate)}';
     } else if (widget.session != null) {
       absentInfo =
-      'Buổi học: ${widget.session!.subjectName} - ${widget.session!.className}\n'
+          'Buổi học: ${widget.session!.subjectName} - ${widget.session!.className}\n'
           'Ngày: ${DateFormat('dd/MM/yyyy').format(widget.session!.sessionDate)}';
     } else {
       absentInfo = 'Không có thông tin buổi học';
@@ -128,122 +128,122 @@ class _RegisterMakeupScreenState extends State<RegisterMakeupScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  absentInfo,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Chọn lịch dạy bù:',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        absentInfo,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Chọn lịch dạy bù:',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
 
-              ListTile(
-                title: Text(
-                  _makeupDate == null
-                      ? 'Chọn ngày dạy bù *'
-                      : 'Ngày: ${DateFormat('dd/MM/yyyy').format(_makeupDate!)}',
-                ),
-                leading: const Icon(Icons.calendar_today),
-                onTap: _selectDate,
-                tileColor: Colors.grey[100],
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
+                    ListTile(
+                      title: Text(
+                        _makeupDate == null
+                            ? 'Chọn ngày dạy bù *'
+                            : 'Ngày: ${DateFormat('dd/MM/yyyy').format(_makeupDate!)}',
+                      ),
+                      leading: const Icon(Icons.calendar_today),
+                      onTap: _selectDate,
+                      tileColor: Colors.grey[100],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
 
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: 'Ca học',
-                  prefixIcon: Icon(Icons.access_time),
-                  border: OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(
-                    value: '1-3',
-                    child: Text('Tiết 1-3 (7:00-9:40)'),
-                  ),
-                  DropdownMenuItem(
-                    value: '4-6',
-                    child: Text('Tiết 4-6 (9:45-12:20)'),
-                  ),
-                  DropdownMenuItem(
-                    value: '7-9',
-                    child: Text('Tiết 7-9 (12:55-15:35)'),
-                  ),
-                  DropdownMenuItem(
-                    value: '10-12',
-                    child: Text('Tiết 10-12 (15:40-18:15)'),
-                  ),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    final parts = value.split('-');
-                    setState(() {
-                      _startPeriod = int.parse(parts[0]);
-                      _endPeriod = int.parse(parts[1]);
-                    });
-                  }
-                },
-                validator: (value) {
-                  if (value == null) return 'Vui lòng chọn ca học';
-                  return null;
-                },
-              ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        labelText: 'Ca học',
+                        prefixIcon: Icon(Icons.access_time),
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: '1-3',
+                          child: Text('Tiết 1-3 (7:00-9:40)'),
+                        ),
+                        DropdownMenuItem(
+                          value: '4-6',
+                          child: Text('Tiết 4-6 (9:45-12:20)'),
+                        ),
+                        DropdownMenuItem(
+                          value: '7-9',
+                          child: Text('Tiết 7-9 (12:55-15:35)'),
+                        ),
+                        DropdownMenuItem(
+                          value: '10-12',
+                          child: Text('Tiết 10-12 (15:40-18:15)'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          final parts = value.split('-');
+                          setState(() {
+                            _startPeriod = int.parse(parts[0]);
+                            _endPeriod = int.parse(parts[1]);
+                          });
+                        }
+                      },
+                      validator: (value) {
+                        if (value == null) return 'Vui lòng chọn ca học';
+                        return null;
+                      },
+                    ),
 
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _classroomController,
-                decoration: const InputDecoration(
-                  labelText: 'Phòng học',
-                  prefixIcon: Icon(Icons.room),
-                  border: OutlineInputBorder(),
-                  hintText: 'Ví dụ: A2-329',
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Vui lòng nhập phòng học';
-                  }
-                  return null;
-                },
-              ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _classroomController,
+                      decoration: const InputDecoration(
+                        labelText: 'Phòng học',
+                        prefixIcon: Icon(Icons.room),
+                        border: OutlineInputBorder(),
+                        hintText: 'Ví dụ: A2-329',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Vui lòng nhập phòng học';
+                        }
+                        return null;
+                      },
+                    ),
 
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submitMakeupSession,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: const Text(
-                    'Gửi yêu cầu',
-                    style: TextStyle(fontSize: 16),
-                  ),
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _submitMakeupSession,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: const Text(
+                          'Gửi yêu cầu',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 }

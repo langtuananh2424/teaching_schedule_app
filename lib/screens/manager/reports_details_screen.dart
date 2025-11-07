@@ -52,7 +52,7 @@ class ReportDetailsScreen extends StatelessWidget {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: SizedBox(
         width:
-        MediaQuery.of(context).size.width *
+            MediaQuery.of(context).size.width *
             0.9, // Chiều rộng bằng 90% màn hình
         child: FloatingActionButton.extended(
           onPressed: () {
@@ -169,9 +169,9 @@ class ReportDetailsScreen extends StatelessWidget {
 
   // Card chi tiết chuyên cần của sinh viên (dạng ExpansionTile)
   Widget _buildAttendanceDetailsCard(
-      List<String> columns,
-      List<Map<String, String>> data,
-      ) {
+    List<String> columns,
+    List<Map<String, String>> data,
+  ) {
     return Card(
       child: ExpansionTile(
         title: const Text(
@@ -189,12 +189,12 @@ class ReportDetailsScreen extends StatelessWidget {
               columns: columns
                   .map(
                     (col) => DataColumn(
-                  label: Text(
-                    col,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              )
+                      label: Text(
+                        col,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  )
                   .toList(),
               rows: data.map((row) {
                 return DataRow(

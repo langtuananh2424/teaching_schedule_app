@@ -170,7 +170,7 @@ class _MyRequestScreenState extends State<MyRequestScreen> {
                 title: Text('${session.subjectName} - ${session.className}'),
                 subtitle: Text(
                   'Ngày: ${DateFormat('dd/MM/yyyy').format(session.makeupDate)}\n'
-                      'Phòng: ${session.classroom}',
+                  'Phòng: ${session.classroom}',
                 ),
                 trailing: Chip(
                   label: Text(

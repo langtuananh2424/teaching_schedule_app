@@ -6,8 +6,11 @@ import '../../models/absence_request.dart';
 import '../../models/makeup_session.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
+import 'absence_history_screen.dart';
+import 'makeup_history_screen.dart';
 import 'reports_screen.dart';
 import 'request_approval_screen.dart';
+import 'profile_screen.dart';
 
 class ManagerDashboardScreen extends StatefulWidget {
   const ManagerDashboardScreen({super.key});
@@ -22,7 +25,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
   final List<Widget> _widgetOptions = <Widget>[
     const DashboardContent(), // Nội dung chính của dashboard
     const ReportsScreen(),
-    const Center(child: Text('Tài khoản')), // Placeholder cho màn hình Profile
+    const ProfileScreen(), // Tab tài khoản
   ];
 
   void _onItemTapped(int index) {
@@ -82,20 +85,15 @@ class _DashboardContentState extends State<DashboardContent> {
   }
 
   void _fetchData() {
-    final token = Provider.of<AuthService>(context, listen: false).token;
+    print('🚀 _fetchData() called');
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final token = authService.token;
+    final userRole = authService.userRole;
+
+    print('🔑 Token exists: ${token != null}');
+    print('👤 User role: $userRole');
+
     if (token != null) {
-<<<<<<< Updated upstream
-      _summaryFuture = _apiService.getDashboardSummary(token).catchError((
-          error,
-          ) {
-        // Nếu API lỗi (backend chưa implement), trả về dữ liệu mẫu
-        return DashboardSummary(
-          pendingAbsenceCount: 0,
-          pendingMakeupCount: 0,
-          recentRequests: [],
-        );
-      });
-=======
       print('📡 Starting API calls...');
       // Bỏ getDashboardSummary (endpoint không tồn tại), lấy data trực tiếp
       _summaryFuture = _apiService.getAbsenceRequests(token).then((
@@ -290,7 +288,6 @@ class _DashboardContentState extends State<DashboardContent> {
               recentRequests: [],
             );
           });
->>>>>>> Stashed changes
     } else {
       _summaryFuture = Future.error('Không tìm thấy token xác thực.');
     }
@@ -301,18 +298,27 @@ class _DashboardContentState extends State<DashboardContent> {
     return FutureBuilder<DashboardSummary>(
       future: _summaryFuture,
       builder: (context, snapshot) {
+        print('🔍 [BUILD] Dashboard snapshot state: ${snapshot.connectionState}');
+        print('🔍 [BUILD] Has data: ${snapshot.hasData}');
+        print('🔍 [BUILD] Has error: ${snapshot.hasError}');
+        
         if (snapshot.connectionState == ConnectionState.waiting) {
+          print('⏳ [BUILD] Waiting for data...');
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
+          print('❌ [BUILD] Error: ${snapshot.error}');
           return Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text('Đã xảy ra lỗi: ${snapshot.error}'),
           );
         }
         if (snapshot.hasData) {
-          return _buildDashboardUI(snapshot.data!);
+          final data = snapshot.data!;
+          print('✅ [BUILD] Has data! Absence: ${data.pendingAbsenceCount}, Makeup: ${data.pendingMakeupCount}');
+          return _buildDashboardUI(data);
         }
+        print('⚠️ [BUILD] No data!');
         return const Padding(
           padding: EdgeInsets.all(16.0),
           child: Text('Không có dữ liệu.'),
@@ -363,6 +369,54 @@ class _DashboardContentState extends State<DashboardContent> {
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+
+              // Buttons to history screens
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AbsenceHistoryScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.history, size: 18),
+                      label: const Text(
+                        'Lịch sử yêu cầu nghỉ',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MakeupHistoryScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.event_note, size: 18),
+                      label: const Text(
+                        'Lịch sử dạy bù',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
 
               // Chỉ hiển thị nếu có yêu cầu
               if (summary.recentRequests.isNotEmpty)
@@ -395,7 +449,7 @@ class _DashboardContentState extends State<DashboardContent> {
                         );
                       }
                       return const SizedBox.shrink(); // Trả về widget rỗng nếu không khớp
-                    }),
+                    }).toList(),
                   ],
                 ),
             ],
@@ -407,11 +461,11 @@ class _DashboardContentState extends State<DashboardContent> {
 
   // Các hàm helper giữ nguyên
   Widget _buildDashboardCard(
-      String count,
-      String label,
-      BuildContext context,
-      RequestType type,
-      ) {
+    String count,
+    String label,
+    BuildContext context,
+    RequestType type,
+  ) {
     // Chọn màu theo loại yêu cầu
     final cardColor = type == RequestType.absence ? Colors.blue : Colors.orange;
 
@@ -423,7 +477,7 @@ class _DashboardContentState extends State<DashboardContent> {
             builder: (context) => RequestApprovalScreen(initialTab: type),
           ),
         ).then(
-              (_) => setState(() => _fetchData()),
+          (_) => setState(() => _fetchData()),
         ); // Tải lại dữ liệu khi quay về
       },
       child: Card(
@@ -454,10 +508,10 @@ class _DashboardContentState extends State<DashboardContent> {
   }
 
   Widget _buildRequestCard(
-      String title,
-      String subtitle,
-      BuildContext context,
-      ) {
+    String title,
+    String subtitle,
+    BuildContext context,
+  ) {
     return Card(
       child: ListTile(
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
