@@ -224,11 +224,11 @@ class _DashboardContentState extends State<DashboardContent> {
                         print('📝 Lecturer names in department: $departmentLecturerNames');
                         
                         // Debug: In ra makeup sessions để check
-                        print('📝 Checking ${allMakeupSessions.length} makeup sessions:');
-                        for (var i = 0; i < allMakeupSessions.length && i < 5; i++) {
-                          final m = allMakeupSessions[i];
-                          print('   - Makeup ${m.id}: lecturer="${m.lecturerName}", managerStatus=${m.managerStatus}');
-                        }
+                        // print('📝 Checking ${allMakeupSessions.length} makeup sessions:');
+                        // for (var i = 0; i < allMakeupSessions.length && i < 5; i++) {
+                        //   final m = allMakeupSessions[i];
+                        //   print('   - Makeup ${m.id}: lecturer="${m.lecturerName}", managerStatus=${m.managerStatus}');
+                        // }
 
                         // ✅ Đếm TẤT CẢ makeup sessions trong khoa (không filter status)
                         final filteredMakeupSessions = allMakeupSessions
@@ -257,11 +257,11 @@ class _DashboardContentState extends State<DashboardContent> {
                   print('🔍 [DASHBOARD] Admin counting makeup sessions...');
                   
                   // Debug: In ra makeup sessions để check
-                  print('📝 Checking ${allMakeupSessions.length} makeup sessions:');
-                  for (var i = 0; i < allMakeupSessions.length && i < 3; i++) {
-                    final m = allMakeupSessions[i];
-                    print('   - Makeup ${m.id}: lecturer="${m.lecturerName}", managerStatus=${m.managerStatus}, academicStatus=${m.academicAffairsStatus}');
-                  }
+                  // print('📝 Checking ${allMakeupSessions.length} makeup sessions:');
+                  // for (var i = 0; i < allMakeupSessions.length && i < 3; i++) {
+                  //   final m = allMakeupSessions[i];
+                  //   print('   - Makeup ${m.id}: lecturer="${m.lecturerName}", managerStatus=${m.managerStatus}, academicStatus=${m.academicAffairsStatus}');
+                  // }
                   
                   // ✅ Đếm TẤT CẢ makeup sessions (không filter status)
                   pendingMakeupCount = allMakeupSessions.length;
