@@ -1,4 +1,4 @@
-name: teaching_schedule
+name: teaching_schedule_app
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.9.2
+  sdk: ^3.9.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -30,7 +30,18 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  provider: ^6.1.2
+  http: ^1.2.0
+  intl: ^0.19.0
+  google_fonts: ^6.2.1
+  calendar_date_picker2: ^2.0.1
+  syncfusion_flutter_charts: ^26.1.40
+  firebase_core: ^2.24.0
+  firebase_messaging: ^14.7.0
+  path_provider: ^2.1.4
+  shared_preferences: ^2.2.3 # Hoặc phiên bản mới nhất
+  jwt_decoder: ^2.0.1
+  file_picker: ^8.1.6
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -38,7 +49,6 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
@@ -56,7 +66,8 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
-
+  assets:
+    - assets/logo.png
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
